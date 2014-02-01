@@ -5,15 +5,15 @@
 </head>
 <body>
 
-  <div recipe-book >
+  <div player-list >
     <h3>Player List</h3>
     <ul>
       <li ng-repeat="player in ctrl.playerlist">
         <ul>
            <li ng-repeat="entry in ctrl.getKeys(player)">
             <b>{{entry}}</b>: {{player[entry].runtimeType}}
-            <input ng-if="player[entry].runtimeType.toString() == 'String'" ng-model="player[entry]" type="text"></input>
-            <span ng-if="player[entry].runtimeType.toString() != 'String'">{{player[entry]}}</span>
+            <input ng-if="player[entry].runtimeType.toString() == 'String' && entry != '_id'" ng-model="player[entry]" type="text"></input>
+            <span ng-if="!(player[entry].runtimeType.toString() == 'String' && entry != '_id')">{{player[entry]}}</span>
             <span ng-if="player[entry] == null">null</span>
             <button ng-click="ctrl.removeField(player, entry)">REMOVE FIELD</button>
            </li>

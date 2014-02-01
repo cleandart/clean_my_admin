@@ -1,4 +1,4 @@
-library recipe_book;
+library player_list;
 
 import 'package:angular/angular.dart';
 import 'package:di/di.dart';
@@ -35,8 +35,20 @@ main() {
   });
 }
 
+// Defines our service called UserInformation.
+class PlayerService {
+  Subscription playerSubscription;
+
+  PlayerService() {
+    playerSubscription = subscriber.subscribe('player');
+    playerSubscription.initialSync.then((_) {
+      print("Initial sync");
+    });
+  }
+}
+
 @NgController(
-    selector: '[recipe-book]',
+    selector: '[player-list]',
     publishAs: 'ctrl')
     class PlayerListController {
 
@@ -60,35 +72,9 @@ main() {
     });
   }
 
-  getKeys(DataMap what) {
-    return what.keys.toList();
-  }
-
-  addPlayer() {
-    rs.playerSubscription.collection.add({});
-  }
-
-  removePlayer(DataMap what) {
-    rs.playerSubscription.collection.remove(what);
-  }
-
-  addField(recipe, fieldname) {
-    recipe[fieldname] = "";
-  }
-
-  removeField(DataMap recipe, fieldname) {
-    recipe.remove(fieldname);
-  }
-}
-
-// Defines our service called UserInformation.
-class PlayerService {
-  Subscription playerSubscription;
-
-  PlayerService() {
-    playerSubscription = subscriber.subscribe('player');
-    playerSubscription.initialSync.then((_) {
-      print("Initial sync");
-    });
-  }
+  getKeys(DataMap what) => what.keys.toList();
+  addPlayer() => rs.playerSubscription.collection.add({});
+  removePlayer(DataMap what) => rs.playerSubscription.collection.remove(what);
+  addField(recipe, fieldname) => recipe[fieldname] = "";
+  removeField(DataMap recipe, fieldname) => recipe.remove(fieldname);
 }
