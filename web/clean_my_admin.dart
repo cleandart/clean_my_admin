@@ -54,15 +54,23 @@ main() {
 
   RecipeBookController(RecipeService this.rs) {
     recipes = [];
-    //players = rs.playerSubscription.collection;
+
     mapa.onChange.listen((val) {
       if (rs.playerSubscription.collection.length != 0)
         rs.playerSubscription.collection.first['name'] = mapa['name'];
     });
     rs.playerSubscription.collection.onChange.listen((_){
       print('new Update');
-      recipes.clear();
-      rs.playerSubscription.collection.forEach((elem) => recipes.add(elem));
+      rs.playerSubscription.collection.forEach((elem) {
+        if (!recipes.contains(elem)) {
+          recipes.add(elem);
+        }
+      });
+      recipes.forEach((elem) {
+        if (!rs.playerSubscription.collection.contains(elem)) {
+          rs.playerSubscription.collection.add(elem);
+        }
+      });
       print('finished');
     });
   }
