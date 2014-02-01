@@ -1,21 +1,22 @@
 <!DOCTYPE html>
-
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Clean my admin</title>
-    <link rel="stylesheet" href="clean_my_admin.css">
-  </head>
-  <body>
-    <h1>Clean my admin</h1>
+<html ng-app>
+<head>
+    <title>CleanMyAdmin</title>
+</head>
+<body>
+  
+  <div recipe-book >
+    <h3>Recipe List</h3>
+    <ul>
+      <li class="pointer"
+          ng-repeat="recipe in ctrl.recipes">
+            <span>{{recipe.name}}</span>
+      </li>
+    </ul>
+  </div>
     
-    <p>Hello world from Dart!</p>
-    
-    <div id="sample_container_id">
-      <p id="sample_text_id"></p>
-    </div>
-
-    <script type="application/dart" src="clean_my_admin.dart"></script>
-    <script src="packages/browser/dart.js"></script>
-  </body>
+  <script src="packages/shadow_dom/shadow_dom.min.js"></script>
+  <script type="application/dart" src="clean_my_admin.dart"></script>
+  <script type="text/javascript" src="packages/browser/dart.js"></script>
+</body>
 </html>

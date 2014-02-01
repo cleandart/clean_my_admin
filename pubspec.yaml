@@ -9,5 +9,7 @@ dependencies:
   clean_router: any
   clean_sync: any
   crypto: any
+  di: any
   logging: any
+  perf_api: any
   shadow_dom: any
