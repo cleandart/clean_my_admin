@@ -62,7 +62,7 @@ void publishCollections() {
 
 void main(List<String> args) {
   runZoned(() {
-    mongodb = new MongoDatabase('mongodb://127.0.0.1/database');
+    mongodb = new MongoDatabase('mongodb://0.0.0.0/devel');
     Future.wait(mongodb.init).then((_) {
       createCollections(mongodb);
       publishCollections();
