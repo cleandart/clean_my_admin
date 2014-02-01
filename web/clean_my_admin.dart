@@ -28,7 +28,7 @@ class MyAppModule extends Module {
 
 main() {
   connection =
-      createHttpConnection("/resources/", new Duration(milliseconds: 50));
+      createHttpConnection("/resources/", new Duration(milliseconds: 200));
 
   subscriber = new Subscriber(connection);
   subscriber.init().then((_) {
@@ -46,38 +46,23 @@ main() {
   List recipes;
 
   RecipeBookController(RecipeService rs) {
-    recipes = rs.recepies;
+    recipes = [];
+    rs.playerSubscription.collection.onChange.listen((_){
+      print('new Update');
+
+      recipes.clear();
+      rs.playerSubscription.collection.forEach(
+          (elem) => recipes.add(new Recipe(elem.toString()))
+         );
+      print('finished');
+    });
+
   }
 
 }
 
 // Defines our service called UserInformation.
 class RecipeService {
-  var _recepies = [
-    new Recipe('My Appetizer','Appetizers',
-        ["Ingredient 1", "Ingredient 2"],
-        "Some Directions", 1, 'fonzie1.jpg'),
-        new Recipe('My Salad','Salads',
-            ["Ingredient 1", "Ingredient 2"],
-            "Some Directions", 3, 'fonzie2.jpg'),
-            new Recipe('My Soup','Soups',
-                ["Ingredient 1", "Ingredient 2"],
-                "Some Directions", 4, 'fonzie1.jpg'),
-                new Recipe('My Main Dish','Main Dishes',
-                    ["Ingredient 1", "Ingredient 2"],
-                    "Some Directions", 2, 'fonzie2.jpg'),
-                    new Recipe('My Side Dish','Side Dishes',
-                        ["Ingredient 1", "Ingredient 2"],
-                        "Some Directions", 3, 'fonzie1.jpg'),
-                        new Recipe('My Awesome Dessert','Desserts',
-                            ["Ingredient 1", "Ingredient 2"],
-                            "Some Directions", 5, 'fonzie2.jpg'),
-                            new Recipe('My So-So Dessert','Desserts',
-                                ["Ingredient 1", "Ingredient 2"],
-                                "Some Directions", 3, 'fonzie1.jpg'),
-                                ];
-
-  get recepies => _recepies;
   Subscription playerSubscription;
 
   RecipeService() {
@@ -88,14 +73,11 @@ class RecipeService {
   }
 }
 
+class PlayerModel {
+}
+
 class Recipe {
   String name;
-  String category;
-  List<String> ingredients;
-  String directions;
-  int rating;
-  String imgUrl;
 
-  Recipe(this.name, this.category, this.ingredients, this.directions,
-      this.rating, this.imgUrl);
+  Recipe(this.name);
 }
