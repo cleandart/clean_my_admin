@@ -11,9 +11,14 @@
       <li ng-repeat="recipe in ctrl.recipes">
         <ul>
            <li ng-repeat="entry in ctrl.getKeys(recipe)">
-            {{entry}}: {{recipe[entry].runtimeType}}
+            <b>{{entry}}</b>: {{recipe[entry].runtimeType}}
             <input ng-if="recipe[entry].runtimeType.toString() == 'String'" ng-model="recipe[entry]" type="text"></input>
+            <span ng-if="recipe[entry].runtimeType.toString() != 'String'">{{recipe[entry]}}</span>
+            <span ng-if="recipe[entry] == null">null</span>
+            <button ng-click="ctrl.removeField(recipe, entry)">REMOVE FIELD</button>
            </li>
+           <input type="text" ng-model="fieldname"></input>
+           <button ng-click="ctrl.addField(recipe, fieldname)">ADD FIELD</button>
         </ul>
         <button ng-click="ctrl.removePlayer(recipe)">REMOVE</button>
       </li>

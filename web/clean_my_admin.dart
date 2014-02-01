@@ -67,6 +67,7 @@ main() {
       changes.removedItems.forEach((elem) {
         recipes.remove(elem);
       });
+      recipes.sort((a, b) => a["_id"].compareTo(b["_id"]));
       print('finished');
     });
   }
@@ -81,6 +82,14 @@ main() {
 
   removePlayer(DataMap what) {
     rs.playerSubscription.collection.remove(what);
+  }
+
+  addField(recipe, fieldname) {
+    recipe[fieldname] = "";
+  }
+
+  removeField(DataMap recipe, fieldname) {
+    recipe.remove(fieldname);
   }
 }
 
