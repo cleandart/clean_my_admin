@@ -23,6 +23,7 @@ class MyAppModule extends Module {
   MyAppModule() {
     type(RecipeBookController);
     type(RecipeService);
+    type(HelloComponent);
   }
 }
 
@@ -96,11 +97,9 @@ class RecipeService {
   }
 }
 
-class PlayerModel {
-}
-
-class Recipe {
-  String name;
-
-  Recipe(this.name);
+@NgComponent(
+    selector: "hello",
+    templateUrl: "hello.html"
+)
+class HelloComponent {
 }
