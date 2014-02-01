@@ -6,24 +6,24 @@
 <body>
 
   <div recipe-book >
-    <h3>Recipe List</h3>
+    <h3>Player List</h3>
     <ul>
-      <li ng-repeat="recipe in ctrl.recipes">
+      <li ng-repeat="player in ctrl.playerlist">
         <ul>
-           <li ng-repeat="entry in ctrl.getKeys(recipe)">
-            <b>{{entry}}</b>: {{recipe[entry].runtimeType}}
-            <input ng-if="recipe[entry].runtimeType.toString() == 'String'" ng-model="recipe[entry]" type="text"></input>
-            <span ng-if="recipe[entry].runtimeType.toString() != 'String'">{{recipe[entry]}}</span>
-            <span ng-if="recipe[entry] == null">null</span>
-            <button ng-click="ctrl.removeField(recipe, entry)">REMOVE FIELD</button>
+           <li ng-repeat="entry in ctrl.getKeys(player)">
+            <b>{{entry}}</b>: {{player[entry].runtimeType}}
+            <input ng-if="player[entry].runtimeType.toString() == 'String'" ng-model="player[entry]" type="text"></input>
+            <span ng-if="player[entry].runtimeType.toString() != 'String'">{{player[entry]}}</span>
+            <span ng-if="player[entry] == null">null</span>
+            <button ng-click="ctrl.removeField(player, entry)">REMOVE FIELD</button>
            </li>
            <input type="text" ng-model="fieldname"></input>
-           <button ng-click="ctrl.addField(recipe, fieldname)">ADD FIELD</button>
+           <button ng-click="ctrl.addField(player, fieldname)">ADD FIELD</button>
         </ul>
-        <button ng-click="ctrl.removePlayer(recipe)">REMOVE</button>
+        <button ng-click="ctrl.removePlayer(player)">REMOVE</button>
       </li>
     </ul>
-    <button ng-click="ctrl.addPlayer()" >ADD</button>
+    <button ng-click="ctrl.addPlayer()" >ADD PLAYER</button>
   </div>
 
   <script src="packages/shadow_dom/shadow_dom.min.js"></script>

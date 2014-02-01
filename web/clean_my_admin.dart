@@ -19,10 +19,10 @@ import 'dart:mirrors';
 Connection connection;
 Subscriber subscriber;
 
-class MyAppModule extends Module {
-  MyAppModule() {
-    type(RecipeBookController);
-    type(RecipeService);
+class PlayerListModule extends Module {
+  PlayerListModule() {
+    type(PlayerListController);
+    type(PlayerService);
   }
 }
 
@@ -32,7 +32,7 @@ main() {
 
   subscriber = new Subscriber(connection);
   subscriber.init().then((_) {
-    ngBootstrap(module: new MyAppModule());
+    ngBootstrap(module: new PlayerListModule());
   }).catchError((e) {
     print(e);
   });
@@ -41,33 +41,24 @@ main() {
 @NgController(
     selector: '[recipe-book]',
     publishAs: 'ctrl')
-    class RecipeBookController {
+    class PlayerListController {
 
-  String get name => mapa['name'];
-  set name(val) => mapa['name'] = val;
+  List playerlist;
 
-  List recipes;
+  PlayerService rs;
 
-  RecipeService rs;
+  PlayerListController(PlayerService this.rs) {
+    playerlist = [];
 
-  DataMap mapa = new DataMap.from({'name':'meno'});
-
-  RecipeBookController(RecipeService this.rs) {
-    recipes = [];
-
-    mapa.onChange.listen((val) {
-      if (rs.playerSubscription.collection.length != 0)
-        rs.playerSubscription.collection.first['name'] = mapa['name'];
-    });
     rs.playerSubscription.collection.onChange.listen((ChangeSet changes){
       print('new Update');
       changes.addedItems.forEach((elem) {
-        recipes.add(elem);
+        playerlist.add(elem);
       });
       changes.removedItems.forEach((elem) {
-        recipes.remove(elem);
+        playerlist.remove(elem);
       });
-      recipes.sort((a, b) => a["_id"].compareTo(b["_id"]));
+      playerlist.sort((a, b) => a["_id"].compareTo(b["_id"]));
       print('finished');
     });
   }
@@ -94,22 +85,13 @@ main() {
 }
 
 // Defines our service called UserInformation.
-class RecipeService {
+class PlayerService {
   Subscription playerSubscription;
 
-  RecipeService() {
+  PlayerService() {
     playerSubscription = subscriber.subscribe('player');
     playerSubscription.initialSync.then((_) {
       print("Initial sync");
     });
   }
-}
-
-class PlayerModel {
-}
-
-class Recipe {
-  String name;
-
-  Recipe(this.name);
 }
