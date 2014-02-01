@@ -4,7 +4,7 @@
     <title>CleanMyAdmin</title>
 </head>
 <body>
-  
+
   <div recipe-book >
     <h3>Recipe List</h3>
     <div ng-click="ctrl.addPlayer()" >ADD</div>
@@ -14,16 +14,15 @@
     <ul>
       <li ng-repeat="recipe in ctrl.recipes">
         <ul>
-           <span>Name: {{recipe}}</span>
-           <li ng-repeat="entry in recipe">
-              <span>{{entry.key}}</span>
-              <input type="text" ng-model="entry.value" />
+           <li ng-repeat="entry in ctrl.getKeys(recipe)">
+            {{entry}}: {{recipe[entry].runtimeType}}
+            <input ng-if="recipe[entry].runtimeType.toString() == 'String'" ng-model="recipe[entry]" type="text"></input>
            </li>
         </ul>
       </li>
     </ul>
   </div>
-    
+
   <script src="packages/shadow_dom/shadow_dom.min.js"></script>
   <script type="application/dart" src="clean_my_admin.dart"></script>
   <script type="text/javascript" src="packages/browser/dart.js"></script>

@@ -67,6 +67,10 @@ main() {
     });
   }
 
+  getKeys(DataMap what) {
+    return what.keys.toList();
+  }
+
   addPlayer() {
     rs.playerSubscription.collection.add({'name':{'first':'maty', 'last': 'fedak'}});
   }
