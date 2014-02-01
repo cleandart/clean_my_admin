@@ -7,10 +7,6 @@
 
   <div recipe-book >
     <h3>Recipe List</h3>
-    <div ng-click="ctrl.addPlayer()" >ADD</div>
-    <div>{{ctrl.name}}</div>
-    <input type="text" ng-model="ctrl.mapa['name']" />
-    <div ng-click="ctrl.changeFirstName()" >CHANGE</div>
     <ul>
       <li ng-repeat="recipe in ctrl.recipes">
         <ul>
@@ -19,8 +15,10 @@
             <input ng-if="recipe[entry].runtimeType.toString() == 'String'" ng-model="recipe[entry]" type="text"></input>
            </li>
         </ul>
+        <button ng-click="ctrl.removePlayer(recipe)">REMOVE</button>
       </li>
     </ul>
+    <button ng-click="ctrl.addPlayer()" >ADD</button>
   </div>
 
   <script src="packages/shadow_dom/shadow_dom.min.js"></script>

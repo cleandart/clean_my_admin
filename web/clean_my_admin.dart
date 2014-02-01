@@ -59,17 +59,13 @@ main() {
       if (rs.playerSubscription.collection.length != 0)
         rs.playerSubscription.collection.first['name'] = mapa['name'];
     });
-    rs.playerSubscription.collection.onChange.listen((_){
+    rs.playerSubscription.collection.onChange.listen((ChangeSet changes){
       print('new Update');
-      rs.playerSubscription.collection.forEach((elem) {
-        if (!recipes.contains(elem)) {
-          recipes.add(elem);
-        }
+      changes.addedItems.forEach((elem) {
+        recipes.add(elem);
       });
-      recipes.forEach((elem) {
-        if (!rs.playerSubscription.collection.contains(elem)) {
-          rs.playerSubscription.collection.add(elem);
-        }
+      changes.removedItems.forEach((elem) {
+        recipes.remove(elem);
       });
       print('finished');
     });
@@ -80,13 +76,12 @@ main() {
   }
 
   addPlayer() {
-    rs.playerSubscription.collection.add({'name':{'first':'maty', 'last': 'fedak'}});
-  }
-  changeFirstName() {
-    print('change >${name}<');
-    rs.playerSubscription.collection.first['name']['first'] = name;
+    rs.playerSubscription.collection.add({});
   }
 
+  removePlayer(DataMap what) {
+    rs.playerSubscription.collection.remove(what);
+  }
 }
 
 // Defines our service called UserInformation.
