@@ -4,16 +4,13 @@
     <title>CleanMyAdmin</title>
 </head>
 <body>
-  <hello></hello>
   <div recipe-book >
     <h3>Recipe List</h3>
     <ul>
       <li ng-repeat="recipe in ctrl.recipes">
         <ul>
-           <li ng-repeat="entry in ctrl.getKeys(recipe)">
-            {{entry}}: {{recipe[entry].runtimeType}}
-            <input ng-if="recipe[entry].runtimeType.toString() == 'String'" ng-model="recipe[entry]" type="text"></input>
-           </li>
+           <span>{{recipe}}</span>
+           <hello value="recipe"></hello>
         </ul>
         <button ng-click="ctrl.removePlayer(recipe)">REMOVE</button>
       </li>
@@ -21,7 +18,7 @@
     <button ng-click="ctrl.addPlayer()" >ADD</button>
   </div>
 
-  <script src="packages/shadow_dom/shadow_dom.min.js"></script>
+  <!--  <script src="packages/shadow_dom/shadow_dom.min.js"></script>-->
   <script type="application/dart" src="clean_my_admin.dart"></script>
   <script type="text/javascript" src="packages/browser/dart.js"></script>
 </body>

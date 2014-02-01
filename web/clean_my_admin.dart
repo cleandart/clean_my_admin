@@ -99,7 +99,12 @@ class RecipeService {
 
 @NgComponent(
     selector: "hello",
-    templateUrl: "hello.html"
+    templateUrl: "hello.html",
+    publishAs: 'hellocmp'
 )
 class HelloComponent {
+  @NgTwoWay('value')
+  DataMap value;
+
+  get keys => value.keys.toList();
 }
