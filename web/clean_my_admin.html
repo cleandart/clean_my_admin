@@ -7,10 +7,19 @@
   
   <div recipe-book >
     <h3>Recipe List</h3>
+    <div ng-click="ctrl.addPlayer()" >ADD</div>
+    <div>{{ctrl.name}}</div>
+    <input type="text" ng-model="ctrl.mapa['name']" />
+    <div ng-click="ctrl.changeFirstName()" >CHANGE</div>
     <ul>
-      <li class="pointer"
-          ng-repeat="recipe in ctrl.recipes">
-            <span>{{recipe.name}}</span>
+      <li ng-repeat="recipe in ctrl.recipes">
+        <ul>
+           <span>Name: {{recipe}}</span>
+           <li ng-repeat="entry in recipe">
+              <span>{{entry.key}}</span>
+              <input type="text" ng-model="entry.value" />
+           </li>
+        </ul>
       </li>
     </ul>
   </div>

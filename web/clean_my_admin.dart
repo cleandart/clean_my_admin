@@ -43,20 +43,36 @@ main() {
     publishAs: 'ctrl')
     class RecipeBookController {
 
+  String get name => mapa['name'];
+  set name(val) => mapa['name'] = val;
+
   List recipes;
 
-  RecipeBookController(RecipeService rs) {
+  RecipeService rs;
+
+  DataMap mapa = new DataMap.from({'name':'meno'});
+
+  RecipeBookController(RecipeService this.rs) {
     recipes = [];
+    //players = rs.playerSubscription.collection;
+    mapa.onChange.listen((val) {
+      if (rs.playerSubscription.collection.length != 0)
+        rs.playerSubscription.collection.first['name'] = mapa['name'];
+    });
     rs.playerSubscription.collection.onChange.listen((_){
       print('new Update');
-
       recipes.clear();
-      rs.playerSubscription.collection.forEach(
-          (elem) => recipes.add(new Recipe(elem.toString()))
-         );
+      rs.playerSubscription.collection.forEach((elem) => recipes.add(elem));
       print('finished');
     });
+  }
 
+  addPlayer() {
+    rs.playerSubscription.collection.add({'name':{'first':'maty', 'last': 'fedak'}});
+  }
+  changeFirstName() {
+    print('change >${name}<');
+    rs.playerSubscription.collection.first['name']['first'] = name;
   }
 
 }
