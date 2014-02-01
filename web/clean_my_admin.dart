@@ -5,10 +5,7 @@ import 'package:di/di.dart';
 import 'package:clean_ajax/client_browser.dart';
 import 'package:clean_data/clean_data.dart';
 import 'package:clean_sync/client.dart';
-import "package:clean_router/client_browser.dart";
-import 'dart:html';
 import 'dart:async';
-import 'dart:convert';
 
 // Temporary, please follow https://github.com/angular/angular.dart/issues/476
 @MirrorsUsed(
