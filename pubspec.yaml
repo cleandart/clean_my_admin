@@ -1,4 +1,6 @@
 name: clean_my_admin
 description: A sample web application
 dependencies:
+  angular: any
   browser: any
+  shadow_dom: any
