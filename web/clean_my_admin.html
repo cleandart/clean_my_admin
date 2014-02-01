@@ -10,6 +10,7 @@
       <li ng-repeat="recipe in ctrl.recipes">
         <ul>
            <span>{{recipe}}</span>
+           <span>{{ctrl.getKeys(recipe)}}</span>
            <hello value="recipe"></hello>
         </ul>
         <button ng-click="ctrl.removePlayer(recipe)">REMOVE</button>
