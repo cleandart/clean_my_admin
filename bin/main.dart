@@ -11,7 +11,7 @@ void main(List<String> args) {
     Future.wait(mongodb.init).then((_) {
       publish('player', (_) => new Future.value(mongodb.collection('player')));
       Backend.bind([], new SHA256(), host: '0.0.0.0',
-          port: 8080).then((Backend backend) {
+          port: 7070).then((Backend backend) {
 
             // ROUTES
             backend.router.addRoute('resources', new Route('/resources/'));

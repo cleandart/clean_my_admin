@@ -6,6 +6,7 @@ import 'package:clean_ajax/client_browser.dart';
 import 'package:clean_data/clean_data.dart';
 import 'package:clean_sync/client.dart';
 import 'dart:async';
+import 'dart:convert';
 
 // Temporary, please follow https://github.com/angular/angular.dart/issues/476
 @MirrorsUsed(
@@ -47,34 +48,69 @@ class PlayerService {
   }
 }
 
+
 @NgController(
     selector: '[player-list]',
     publishAs: 'ctrl')
     class PlayerListController {
 
-  List playerlist;
+  List playerlist =[];
 
   PlayerService rs;
 
   PlayerListController(PlayerService this.rs) {
-    playerlist = [];
+
+    recalc(){
+      print('Drawing');
+      playerlist.clear();
+      //print('Collection ${rs.playerSubscription.collection}');
+      rs.playerSubscription.collection.forEach((Map doc){
+        var newDoc = {};
+         doc.keys.forEach((key){newDoc[key] = JSON.encode(doc[key]);});
+         playerlist.add(newDoc);
+      });
+      print('Drawing finished');
+    }
+    recalc();
 
     rs.playerSubscription.collection.onChange.listen((ChangeSet changes){
       print('new Update');
-      changes.addedItems.forEach((elem) {
+      recalc();
+      /*changes.addedItems.forEach((elem) {
         playerlist.add(elem);
       });
       changes.removedItems.forEach((elem) {
         playerlist.remove(elem);
       });
-      playerlist.sort((a, b) => a["_id"].compareTo(b["_id"]));
+      playerlist.sort((a, b) => a["_id"].compareTo(b["_id"]));*/
+      //playerlist = new MyList.set(rs.playerSubscription.collection.toList());
       print('finished');
     });
   }
 
-  getKeys(DataMap what) => what.keys.toList();
-  addPlayer() => rs.playerSubscription.collection.add({});
-  removePlayer(DataMap what) => rs.playerSubscription.collection.remove(what);
-  addField(recipe, fieldname) => recipe[fieldname] = "";
-  removeField(DataMap recipe, fieldname) => recipe.remove(fieldname);
+  save(map, key) {
+    print('Save ${map.runtimeType}');
+    //var map = JSON.decode(mapString);
+    print('Save $key in $map');
+    print('Will search for  ${map['_id']}');
+    var x = rs.playerSubscription.collection.findBy('_id', JSON.decode(map['_id']));
+    print('Before ${x.runtimeType} $x');
+    print('Will set key $key to >${JSON.decode(map[key])}<');
+    x.first[key] = JSON.decode(map[key]);
+    print('After: $x');
+  }
+
+  getReal(what) => rs.playerSubscription.collection.findBy('_id', JSON.decode(what['_id'])).first;
+
+  getKeys(what) => what.keys.toList();
+
+  addPlayer() {
+    print('add Player');
+    rs.playerSubscription.collection.add({});
+  }
+  removePlayer(what) {
+    rs.playerSubscription.collection.remove(getReal(what));
+  }
+  addField(recipe, fieldname) => getReal(recipe)[fieldname] = "";
+  removeField(recipe, fieldname) => getReal(recipe).remove(fieldname);
 }

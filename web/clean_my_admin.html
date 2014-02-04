@@ -14,6 +14,7 @@
             <b>{{entry}}</b>: {{player[entry].runtimeType}}
             <input ng-if="player[entry].runtimeType.toString() == 'String' && entry != '_id'" ng-model="player[entry]" type="text"></input>
             <span ng-if="!(player[entry].runtimeType.toString() == 'String' && entry != '_id')">{{player[entry]}}</span>
+            <button ng-click="ctrl.save(player, entry)">SAVE FIELD</button>
             <span ng-if="player[entry] == null">null</span>
             <button ng-click="ctrl.removeField(player, entry)">REMOVE FIELD</button>
            </li>
