@@ -1,53 +1,225 @@
 library player_list;
 
 import 'package:angular/angular.dart';
-import 'package:di/di.dart';
 import 'package:clean_ajax/client_browser.dart';
 import 'package:clean_data/clean_data.dart';
 import 'package:clean_sync/client.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:html';
 
-// Temporary, please follow https://github.com/angular/angular.dart/issues/476
-@MirrorsUsed(
-  targets: const ['recipe_book_controller'],
-  override: '*')
-import 'dart:mirrors';
+import 'package:react/react_client.dart' as react;
+import "package:react/react.dart";
 
 Connection connection;
 Subscriber subscriber;
-
-class PlayerListModule extends Module {
-  PlayerListModule() {
-    type(PlayerListController);
-    type(PlayerService);
-  }
-}
+Subscription playerSubscription, clubSubscription,
+             userSubscription, matchSubscription, roundSubscription;
 
 main() {
+  react.setClientConfiguration();
+
   connection =
       createHttpConnection("/resources/", new Duration(milliseconds: 200));
 
   subscriber = new Subscriber(connection);
   subscriber.init().then((_) {
-    ngBootstrap(module: new PlayerListModule());
+    playerSubscription = subscriber.subscribe('player');
+    clubSubscription = subscriber.subscribe('club');
+    userSubscription = subscriber.subscribe('user');
+    matchSubscription = subscriber.subscribe('match');
+    roundSubscription = subscriber.subscribe('round');
+    Subscription.wait([playerSubscription, clubSubscription,
+                       userSubscription, matchSubscription, roundSubscription])
+    .then((_) {
+      var page = Page.register();
+      renderComponent(page(), querySelector('#page'));
+      print("Initial sync");
+    });
   }).catchError((e) {
     print(e);
   });
 }
 
-// Defines our service called UserInformation.
-class PlayerService {
-  Subscription playerSubscription;
 
-  PlayerService() {
-    playerSubscription = subscriber.subscribe('player');
-    playerSubscription.initialSync.then((_) {
-      print("Initial sync");
+class Page extends Component {
+
+  static register() {
+    var _registeredComponent = registerComponent(() => new Page());
+    return () => _registeredComponent({});
+  }
+
+
+  Page();
+
+  StreamSubscription updateSubscription;
+
+  sellectSubs(subscription){
+    selectedCollection = subscription.collection;
+    if (updateSubscription != null) updateSubscription.cancel();
+    updateSubscription = selectedCollection.onChange.listen((_) { print('onChange');redraw();});
+    redraw();
+  }
+
+  var selectedCollection = null;
+  var select = new DataReference('');
+  var filed = new DataReference('_id');
+
+  render() {
+   return div({},[
+    mButton(onClick: () => sellectSubs(playerSubscription), content: 'Players'),
+    '  ',
+    mButton(onClick: () => sellectSubs(userSubscription), content: 'Users'),
+    '  ',
+    mButton(onClick: () => sellectSubs(clubSubscription), content: 'Club'),
+    '  ',
+    mButton(onClick: () => sellectSubs(matchSubscription), content: 'Match'),
+    '  ',
+    mButton(onClick: () => sellectSubs(roundSubscription), content: 'Round'),
+    '  ',
+    div({},[
+      'Field key',
+      mI(value:filed),
+      'value in JSON:',
+      mI(value:select),
+      mButton(onClick: () => redraw(), content: 'Filter'),
+    (selectedCollection != null)?
+      ul({},
+         selectedCollection.where((item) => select.value =='' || item[filed.value] == JSON.decode(select.value) ).map((item) => li({},renderOneDocument(item))).toList()
+       )
+      :
+      div({})
+    ])
+   ]);
+  }
+
+}
+
+renderOneDocument(DataMap document) {
+  var addField = new DataReference('');
+  var addFieldVal = new DataReference('');
+  return ul({},
+      [li({},[
+                  'Key',
+                  mI(value: addField),
+                  'Value:',
+                  mI(value: addFieldVal),
+                  mButton(onClick: (){
+                    print('Add Field ${addField.value}');
+                    document[addField.value] = JSON.decode(addFieldVal.value);
+                  }, content: 'Add Field'),
+                  ])]..addAll(
+      document.keys.map((key) {
+        if (key == '_id') {
+          return li({},[
+                        b({},key),
+                        ' ',
+                        span({},document[key].toString())
+                 ]);
+        } else if (document[key] is DataMap) {
+          return li({},[
+              b({},key),
+              mButton(onClick: (){
+                    document[key] = {};
+                    print('Clear ${key}');
+              }, content: 'Clear map'),
+              mButton(onClick: (){
+                document.remove(key);
+                print('Remove field ${key}');
+              }, content: 'Remove field'),
+              mButton(onClick: (){
+                window.alert(JSON.encode(document[key]));
+                print('Show json');
+              }, content: 'Show json'),
+              renderOneDocument(document[key])
+              ]);//
+        } else {
+          var val = new DataReference(JSON.encode(document[key]));
+          return li({},[
+           b({},key),
+           ' ',
+           document[key].runtimeType.toString(),
+           ' ',
+           mI(value: val),
+           ' - ',
+           mButton(onClick: (){
+             var newVal = JSON.decode(val.value);
+             print('Save ${val.value} decoded: $newVal');
+             document[key] = newVal;
+           }, content: 'Save'),
+            ' - ',
+           mButton(onClick: (){
+             document.remove(key);
+             print('Remove ${val.value}');
+           }, content: 'Remove field'),
+          // span({},document[key].toString())
+      ]);
+     }
+
+    }).toList())..addAll([
+    ])
+   );
+}
+
+InputType mI = Input.register(/*constructor param*/);
+
+typedef InputType({String id, String type, String className, value, String placeholder, bool readOnly, Function onChange, Function onBlur, String name});
+
+class Input extends Component {
+  static InputType register(/*constructor param*/) {
+    var _registeredComponent = registerComponent(() => new Input(/*constructor param*/));
+    return ({String id:null, String type:'text', String className:'', value:null,
+      String placeholder:'', bool readOnly:false, onChange: null, onBlur: null, String name:''}) {
+
+      //TODO maybe create it
+      assert(value is DataReference);
+
+      return _registeredComponent({
+        'id': id,
+        'type' : type,
+        'name': name,
+        'className': className,
+        'placeholder': placeholder,
+        'value': value,
+        'readOnly' : readOnly,
+        'onChange': onChange,
+        'onBlur': onBlur
+      },null);
+    };
+  }
+
+  onChange(e) {
+    var value = e.target.value;
+    if (props['type'] == 'checkbox') value = e.target.checked;
+    if (props['readOnly']) return;
+    props['value'].value = value;
+    redraw();
+    if (props['onChange'] != null) props['onChange'](value);
+  }
+
+  onBlur(e) {
+    if (props['onBlur'] != null)  props['onBlur'](e.target.value);
+  }
+
+  render() {
+    return input({
+      'id': props['id'],
+      'type': props['type'],
+      'name': props['name'],
+      'placeholder': props['placeholder'],
+      'className': props['inputClass'],
+      'checked': (props['type'] == 'checkbox')?props['value'].value:null,
+      'value': props['value'].value,
+      'onChange': onChange,
+      'onBlur': onBlur
     });
   }
 }
 
+mButton({String className:'',Function onClick:null, String content:'', bool isDisabled: false}) =>
+    span({'className': 'myButton',  'onClick': (e) => (onClick==null || isDisabled)?null:onClick()}, content);
+
+/*
 
 @NgController(
     selector: '[player-list]',
@@ -114,3 +286,4 @@ class PlayerService {
   addField(recipe, fieldname) => getReal(recipe)[fieldname] = "";
   removeField(recipe, fieldname) => getReal(recipe).remove(fieldname);
 }
+*/

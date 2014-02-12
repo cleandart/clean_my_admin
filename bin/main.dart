@@ -10,6 +10,10 @@ void main(List<String> args) {
     MongoDatabase mongodb = new MongoDatabase('mongodb://127.0.0.1/devel');
     Future.wait(mongodb.init).then((_) {
       publish('player', (_) => new Future.value(mongodb.collection('player')));
+      publish('user', (_) => new Future.value(mongodb.collection('user')));
+      publish('match', (_) => new Future.value(mongodb.collection('match')));
+      publish('round', (_) => new Future.value(mongodb.collection('round')));
+      publish('club', (_) => new Future.value(mongodb.collection('club')));
       Backend.bind([], new SHA256(), host: '0.0.0.0',
           port: 7070).then((Backend backend) {
 
