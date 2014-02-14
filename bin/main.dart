@@ -20,7 +20,8 @@ void main(List<String> args) {
 
             // ROUTES
             backend.router.addRoute('resources', new Route('/resources/'));
-            backend.router.addRoute('static', new Route("/static/*"));
+            backend.router.addRoute('dart', new Route("/dart/*"));
+            backend.router.addRoute('js', new Route("/js/*"));
             backend.addDefaultHttpHeader('Access-Control-Allow-Origin','*');
 
             /// AJAX Requests
@@ -28,7 +29,8 @@ void main(List<String> args) {
             multiRequestHandler.registerDefaultHandler(handleSyncRequest);
             backend.addView('resources', multiRequestHandler.handleHttpRequest);
 
-            backend.addStaticView('static', 'web/');
+            backend.addStaticView('dart', 'web/');
+            backend.addStaticView('js', 'build/');
             print('Finished');
       });
     });
