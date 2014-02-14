@@ -7,7 +7,8 @@ import 'package:crypto/crypto.dart';
 
 void main(List<String> args) {
   runZoned(() {
-    MongoDatabase mongodb = new MongoDatabase('mongodb://127.0.0.1/devel');
+    MongoDatabase mongodb = new MongoDatabase('mongodb://stage:futbaltojehra@stage.fanligy.sk/stage');
+    //MongoDatabase mongodb = new MongoDatabase('mongodb://0.0.0.0:27017/devel');
     Future.wait(mongodb.init).then((_) {
       publish('player', (_) => new Future.value(mongodb.collection('player')));
       publish('user', (_) => new Future.value(mongodb.collection('user')));
@@ -27,7 +28,7 @@ void main(List<String> args) {
             multiRequestHandler.registerDefaultHandler(handleSyncRequest);
             backend.addView('resources', multiRequestHandler.handleHttpRequest);
 
-            backend.addStaticView('static', '../web/');
+            backend.addStaticView('static', 'web/');
             print('Finished');
       });
     });
