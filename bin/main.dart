@@ -29,7 +29,7 @@ void main(List<String> args) {
             backend.addView('resources', multiRequestHandler.handleHttpRequest);
 
             backend.addStaticView('dart', 'web/');
-            backend.addStaticView('js', 'build/');
+            backend.addStaticView('js', 'build/web/');
             print('Finished');
       });
     });
