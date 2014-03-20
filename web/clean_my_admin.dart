@@ -25,10 +25,15 @@ main() {
   subscriber = new Subscriber(connection);
   subscriber.init().then((_) {
     playerSubscription = subscriber.subscribe('player');
+    playerSubscription.collection.addIndex(['_id']);
     clubSubscription = subscriber.subscribe('club');
+    clubSubscription.collection.addIndex(['_id']);
     userSubscription = subscriber.subscribe('user');
+    userSubscription.collection.addIndex(['_id']);
     matchSubscription = subscriber.subscribe('match');
+    matchSubscription.collection.addIndex(['_id']);
     roundSubscription = subscriber.subscribe('round');
+    roundSubscription.collection.addIndex(['_id']);
     Subscription.wait([playerSubscription, clubSubscription,
                        userSubscription, matchSubscription, roundSubscription])
     .then((_) {
@@ -61,8 +66,10 @@ class Page extends Component {
     redraw();
   }
 
-  var selectedCollection = null;
+  DataSet selectedCollection = null;
   var select = new DataReference('');
+  var newDocument = new DataReference('');
+  var deleteDocument = new DataReference('');
   var filed = new DataReference('_id');
 
   render() {
@@ -77,15 +84,38 @@ class Page extends Component {
     '  ',
     mButton(onClick: () => sellectSubs(roundSubscription), content: 'Round'),
     '  ',
+    svg({"width":"100", "height":"100"},[
+      path({"stroke":"red", "d":"M 0 0 L 20 20"})
+    ]),
     div({},[
-      'Field key',
-      mI(value:filed),
-      'value in JSON:',
-      mI(value:select),
-      mButton(onClick: () => redraw(), content: 'Filter'),
+      div({},[
+        'Field key1',
+        mI(value:filed),
+        'value in JSON:',
+        mI(value:select),
+        mButton(onClick: () => redraw(), content: 'Filter'),
+      ]),
+      div({},[
+        'value in JSON:',
+        mI(value:newDocument),
+        mButton(onClick: () { selectedCollection.add(JSON.decode(newDocument.value)); redraw();}, content: 'Add'),
+      ]),
+      div({},[
+        'Remove document Id in json:',
+        mI(value:deleteDocument),
+        mButton(onClick: () {
+          selectedCollection.remove(
+              selectedCollection.findBy('_id', JSON.decode(deleteDocument.value)).first
+          ); redraw();}, content: 'Delete'),
+      ]),
+      div({},[
+        'Total documents',
+        (selectedCollection != null)?selectedCollection.length : 'not selected',
+      ]),
     (selectedCollection != null)?
       ul({},
-         selectedCollection.where((item) => select.value =='' || item[filed.value] == JSON.decode(select.value) ).map((item) => li({},renderOneDocument(item))).toList()
+         selectedCollection.where((item) => select.value =='' || item[filed.value] == JSON.decode(select.value) )
+           .map((item) => li({},renderOneDocument(item))).toList()
        )
       :
       div({})
@@ -108,6 +138,9 @@ renderOneDocument(DataMap document) {
                     print('Add Field ${addField.value}');
                     document[addField.value] = JSON.decode(addFieldVal.value);
                   }, content: 'Add Field'),
+                  mButton(onClick: (){
+                    window.alert(JSON.encode(document));
+                  }, content: 'Show JSON'),
                   ])]..addAll(
       document.keys.map((key) {
         if (key == '_id') {

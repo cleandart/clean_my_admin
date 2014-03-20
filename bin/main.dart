@@ -7,15 +7,17 @@ import 'package:crypto/crypto.dart';
 
 void main(List<String> args) {
   runZoned(() {
-    MongoDatabase mongodb = new MongoDatabase('mongodb://stage:futbaltojehra@stage.fanligy.sk/stage');
+    MongoDatabase mongodb = new MongoDatabase('mongodb://stage.fanligy.sk/devel');
     //MongoDatabase mongodb = new MongoDatabase('mongodb://0.0.0.0:27017/devel');
+    //MongoDatabase mongodb = new MongoDatabase('mongodb://prod:futbaltojehra@fanligy.sk/prod');
+    //MongoDatabase mongodb = new MongoDatabase('mongodb://devel:futbaltojehra@stage.fanligy.sk/devel');
     Future.wait(mongodb.init).then((_) {
       publish('player', (_) => new Future.value(mongodb.collection('player')));
       publish('user', (_) => new Future.value(mongodb.collection('user')));
       publish('match', (_) => new Future.value(mongodb.collection('match')));
       publish('round', (_) => new Future.value(mongodb.collection('round')));
       publish('club', (_) => new Future.value(mongodb.collection('club')));
-      Backend.bind('0.0.0.0', 8088, []).then((Backend backend) {
+      Backend.bind('0.0.0.0', 8088, "").then((Backend backend) {
 
             // ROUTES
             backend.router.addRoute('resources', new Route('/resources/'));
