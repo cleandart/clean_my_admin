@@ -1,6 +1,5 @@
 library player_list;
 
-import 'package:angular/angular.dart';
 import 'package:clean_ajax/client_browser.dart';
 import 'package:clean_data/clean_data.dart';
 import 'package:clean_sync/client.dart';
