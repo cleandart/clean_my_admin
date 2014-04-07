@@ -113,7 +113,9 @@ class Page extends Component {
       ]),
     (selectedCollection != null)?
       ul({},
-         selectedCollection.where((item) => select.value =='' || item[filed.value] == JSON.decode(select.value) )
+         selectedCollection.where((item) => select.value =='' || item[filed.value] == JSON.decode(select.value)
+         || (JSON.decode(select.value) != null && item[filed.value] !=null &&
+                item[filed.value].toString().toLowerCase() ==  JSON.decode(select.value).toString().toLowerCase()))
            .map((item) => li({},renderOneDocument(item))).toList()
        )
       :
