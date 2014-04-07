@@ -3,7 +3,6 @@ import 'package:clean_sync/server.dart';
 import 'package:clean_ajax/server.dart';
 import 'package:clean_backend/clean_backend.dart';
 import 'package:clean_router/common.dart';
-import 'package:crypto/crypto.dart';
 
 void main(List<String> args) {
   runZoned(() {

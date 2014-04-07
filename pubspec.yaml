@@ -1,18 +1,11 @@
 name: clean_my_admin
 description: A sample web application
 dependencies:
-  angular: any
   browser: any
   clean_ajax: any
   clean_backend: any
   clean_data: any
   clean_router: any
   clean_sync: any
-  crypto: any
-  di: any
   logging: any
-  perf_api: any
-  shadow_dom: any
-  react:
-    git: https://github.com/cleandart/react-dart
-    version: '>=0.2.10'
+  react: any
