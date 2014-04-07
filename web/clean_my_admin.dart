@@ -19,7 +19,7 @@ main() {
   react.setClientConfiguration();
 
   connection =
-      createHttpConnection("/resources/", new Duration(milliseconds: 200));
+      createHttpConnection("/resources/", new Duration(milliseconds: 2000));
 
   subscriber = new Subscriber(connection);
   subscriber.init().then((_) {
@@ -53,6 +53,12 @@ class Page extends Component {
     return () => _registeredComponent({});
   }
 
+  var expanded = null;
+
+  onEdit(id) {
+    expanded = id;
+    redraw();
+  }
 
   Page();
 
@@ -83,9 +89,6 @@ class Page extends Component {
     '  ',
     mButton(onClick: () => sellectSubs(roundSubscription), content: 'Round'),
     '  ',
-    svg({"width":"100", "height":"100"},[
-      path({"stroke":"red", "d":"M 0 0 L 20 20"})
-    ]),
     div({},[
       div({},[
         'Field key1',
@@ -116,7 +119,7 @@ class Page extends Component {
          selectedCollection.where((item) => select.value =='' || item[filed.value] == JSON.decode(select.value)
          || (JSON.decode(select.value) != null && item[filed.value] !=null &&
                 item[filed.value].toString().toLowerCase() ==  JSON.decode(select.value).toString().toLowerCase()))
-           .map((item) => li({},renderOneDocument(item))).toList()
+           .map((item) => li({}, item['_id'] == expanded ? renderOneDocument(item) : renderReadOnlyDocument(onEdit, item))).toList()
        )
       :
       div({})
@@ -124,6 +127,39 @@ class Page extends Component {
    ]);
   }
 
+}
+
+toPrettyJson(document, [indent = ""]) {
+  var indentValue = "  ";
+  getBody(keys) {
+     var result = [];
+     for (var key in keys) {
+       var value = toPrettyJson(document[key], indent + indentValue);
+       if (key is String) key = '"$key"';
+       result.add('$indentValue$indent$key: $value');
+     }
+     return result.join("\n");
+   }
+
+  if (document == null) return "null";
+  if (document is String) return '"${document}"';
+  if (document is num) return document;
+  if (document is DataMap) {
+    var keys = document.keys.toList()..sort();
+    return "{\n${getBody(keys)}\n$indent}";
+  }
+  if (document is DataList) {
+    var keys = [];
+    for (var i = 0; i < document.length; i++) keys.add(i);
+    return "[\n${getBody(keys)}\n$indent]";
+  }
+}
+
+renderReadOnlyDocument(Function onEdit, DataMap document) {
+  return [
+          button({'onClick': (e) => onEdit(document['_id'])}, "Edit"),
+          pre({}, toPrettyJson(document))
+         ];
 }
 
 renderOneDocument(DataMap document) {
@@ -252,72 +288,3 @@ class Input extends Component {
 
 mButton({String className:'',Function onClick:null, String content:'', bool isDisabled: false}) =>
     span({'className': 'myButton',  'onClick': (e) => (onClick==null || isDisabled)?null:onClick()}, content);
-
-/*
-
-@NgController(
-    selector: '[player-list]',
-    publishAs: 'ctrl')
-    class PlayerListController {
-
-  List playerlist =[];
-
-  PlayerService rs;
-
-  PlayerListController(PlayerService this.rs) {
-
-    recalc(){
-      print('Drawing');
-      playerlist.clear();
-      //print('Collection ${rs.playerSubscription.collection}');
-      rs.playerSubscription.collection.forEach((Map doc){
-        var newDoc = {};
-         doc.keys.forEach((key){newDoc[key] = JSON.encode(doc[key]);});
-         playerlist.add(newDoc);
-      });
-      print('Drawing finished');
-    }
-    recalc();
-
-    rs.playerSubscription.collection.onChange.listen((ChangeSet changes){
-      print('new Update');
-      recalc();
-      /*changes.addedItems.forEach((elem) {
-        playerlist.add(elem);
-      });
-      changes.removedItems.forEach((elem) {
-        playerlist.remove(elem);
-      });
-      playerlist.sort((a, b) => a["_id"].compareTo(b["_id"]));*/
-      //playerlist = new MyList.set(rs.playerSubscription.collection.toList());
-      print('finished');
-    });
-  }
-
-  save(map, key) {
-    print('Save ${map.runtimeType}');
-    //var map = JSON.decode(mapString);
-    print('Save $key in $map');
-    print('Will search for  ${map['_id']}');
-    var x = rs.playerSubscription.collection.findBy('_id', JSON.decode(map['_id']));
-    print('Before ${x.runtimeType} $x');
-    print('Will set key $key to >${JSON.decode(map[key])}<');
-    x.first[key] = JSON.decode(map[key]);
-    print('After: $x');
-  }
-
-  getReal(what) => rs.playerSubscription.collection.findBy('_id', JSON.decode(what['_id'])).first;
-
-  getKeys(what) => what.keys.toList();
-
-  addPlayer() {
-    print('add Player');
-    rs.playerSubscription.collection.add({});
-  }
-  removePlayer(what) {
-    rs.playerSubscription.collection.remove(getReal(what));
-  }
-  addField(recipe, fieldname) => getReal(recipe)[fieldname] = "";
-  removeField(recipe, fieldname) => getReal(recipe).remove(fieldname);
-}
-*/
