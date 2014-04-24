@@ -16,26 +16,30 @@ Subscription playerSubscription, clubSubscription,
              userSubscription, matchSubscription, roundSubscription;
 
 main() {
+  print('Javascript started');
   react.setClientConfiguration();
-
+  print('will create connection');
   connection =
       createHttpConnection("/resources/", new Duration(milliseconds: 2000));
-
+  print('will create subscriber');
   subscriber = new Subscriber(connection);
   subscriber.init().then((_) {
-    playerSubscription = subscriber.subscribe('player');
+    print('create subscription');
+    playerSubscription = subscriber.subscribe('player')..restart();
     playerSubscription.collection.addIndex(['_id']);
-    clubSubscription = subscriber.subscribe('club');
+    clubSubscription = subscriber.subscribe('club')..restart();
     clubSubscription.collection.addIndex(['_id']);
-    userSubscription = subscriber.subscribe('user');
+    userSubscription = subscriber.subscribe('user')..restart();
     userSubscription.collection.addIndex(['_id']);
-    matchSubscription = subscriber.subscribe('match');
+    matchSubscription = subscriber.subscribe('match')..restart();
     matchSubscription.collection.addIndex(['_id']);
-    roundSubscription = subscriber.subscribe('round');
+    roundSubscription = subscriber.subscribe('round')..restart();
     roundSubscription.collection.addIndex(['_id']);
+    print('wait for subscription');
     Subscription.wait([playerSubscription, clubSubscription,
                        userSubscription, matchSubscription, roundSubscription])
     .then((_) {
+      print('all done render page');
       var page = Page.register();
       renderComponent(page(), querySelector('#page'));
       print("Initial sync");
