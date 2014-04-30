@@ -148,6 +148,7 @@ toPrettyJson(document, [indent = ""]) {
   if (document == null) return "null";
   if (document is String) return '"${document}"';
   if (document is num) return document;
+  if (document is bool) return document.toString();
   if (document is DataMap) {
     var keys = document.keys.toList()..sort();
     return "{\n${getBody(keys)}\n$indent}";
