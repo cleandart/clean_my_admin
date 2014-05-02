@@ -18,6 +18,8 @@ void main(List<String> args) {
       publish('match', (_) => new Future.value(mongodb.collection('match')));
       publish('round', (_) => new Future.value(mongodb.collection('round')));
       publish('club', (_) => new Future.value(mongodb.collection('club')));
+      publish('user_rank', (_) => new Future.value(mongodb.collection('user_rank')));
+
       Backend.bind('0.0.0.0', 8088, "").then((Backend backend) {
 
             // ROUTES

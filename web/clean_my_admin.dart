@@ -13,7 +13,8 @@ import "package:react/react.dart";
 Connection connection;
 Subscriber subscriber;
 Subscription playerSubscription, clubSubscription,
-             userSubscription, matchSubscription, roundSubscription;
+             userSubscription, matchSubscription, roundSubscription,
+             userRoundSubscription;
 
 main() {
   print('Javascript started');
@@ -35,6 +36,8 @@ main() {
     matchSubscription.collection.addIndex(['_id']);
     roundSubscription = subscriber.subscribe('round')..restart();
     roundSubscription.collection.addIndex(['_id']);
+    userRoundSubscription = subscriber.subscribe('user_rank')..restart();
+    userRoundSubscription.collection.addIndex(['_id']);
     print('wait for subscription');
     Subscription.wait([playerSubscription, clubSubscription,
                        userSubscription, matchSubscription, roundSubscription])
@@ -93,6 +96,8 @@ class Page extends Component {
     '  ',
     mButton(onClick: () => sellectSubs(roundSubscription), content: 'Round'),
     '  ',
+    mButton(onClick: () => sellectSubs(userRoundSubscription), content: 'UserRound'),
+        '  ',
     div({},[
       div({},[
         'Field key1',
