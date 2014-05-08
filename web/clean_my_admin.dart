@@ -83,7 +83,7 @@ class Page extends Component {
    return div({},
      allCollection.map((sub) =>
          span({},[
-           mButton(onClick: () => sellectSubs(sub), content: sub),
+           mButton(className: (subscriptions[sub]!=null)?'green':'', onClick: () => sellectSubs(sub), content: sub),
            ' - '
          ])
      ).toList()..addAll([
@@ -288,4 +288,4 @@ class Input extends Component {
 }
 
 mButton({String className:'',Function onClick:null, String content:'', bool isDisabled: false}) =>
-    span({'className': 'myButton',  'onClick': (e) => (onClick==null || isDisabled)?null:onClick()}, content);
+    span({'className': 'myButton $className',  'onClick': (e) => (onClick==null || isDisabled)?null:onClick()}, content);
