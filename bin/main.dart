@@ -4,6 +4,8 @@ import 'package:clean_ajax/server.dart';
 import 'package:clean_backend/clean_backend.dart';
 import 'package:clean_router/common.dart';
 
+final List allCollection = const ['player', 'club', 'user', 'match', 'round', 'user_rank', 'bucket_user'];
+
 void main(List<String> args) {
   runZoned(() {
     //MongoDatabase mongodb = new MongoDatabase('mongodb://stage.fanligy.sk/devel');
@@ -13,13 +15,9 @@ void main(List<String> args) {
     //MongoDatabase mongodb = new MongoDatabase('mongodb://prod:futbaltojehra@fanligy.sk/prod');
     //MongoDatabase mongodb = new MongoDatabase('mongodb://devel:futbaltojehra@stage.fanligy.sk/devel');
     Future.wait(mongodb.init).then((_) {
-      publish('player', (_) => new Future.value(mongodb.collection('player')));
-      publish('user', (_) => new Future.value(mongodb.collection('user')));
-      publish('match', (_) => new Future.value(mongodb.collection('match')));
-      publish('round', (_) => new Future.value(mongodb.collection('round')));
-      publish('club', (_) => new Future.value(mongodb.collection('club')));
-      publish('user_rank', (_) => new Future.value(mongodb.collection('user_rank')));
-
+      allCollection.forEach((collName){
+        publish(collName, (_) => new Future.value(mongodb.collection(collName)));
+      });
       Backend.bind('0.0.0.0', 8088, "").then((Backend backend) {
 
             // ROUTES

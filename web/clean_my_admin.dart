@@ -12,9 +12,8 @@ import "package:react/react.dart";
 
 Connection connection;
 Subscriber subscriber;
-Subscription playerSubscription, clubSubscription,
-             userSubscription, matchSubscription, roundSubscription,
-             userRoundSubscription;
+Map<String, Subscription> subscriptions = {};
+final List allCollection = const ['player', 'club', 'user', 'match', 'round', 'user_rank', 'bucket_user'];
 
 main() {
   print('Javascript started');
@@ -26,27 +25,13 @@ main() {
   subscriber = new Subscriber(connection);
   subscriber.init().then((_) {
     print('create subscription');
-    playerSubscription = subscriber.subscribe('player')..restart();
-    playerSubscription.collection.addIndex(['_id']);
-    clubSubscription = subscriber.subscribe('club')..restart();
-    clubSubscription.collection.addIndex(['_id']);
-    userSubscription = subscriber.subscribe('user')..restart();
-    userSubscription.collection.addIndex(['_id']);
-    matchSubscription = subscriber.subscribe('match')..restart();
-    matchSubscription.collection.addIndex(['_id']);
-    roundSubscription = subscriber.subscribe('round')..restart();
-    roundSubscription.collection.addIndex(['_id']);
-    userRoundSubscription = subscriber.subscribe('user_rank')..restart();
-    userRoundSubscription.collection.addIndex(['_id']);
-    print('wait for subscription');
-    Subscription.wait([playerSubscription, clubSubscription,
-                       userSubscription, matchSubscription, roundSubscription])
-    .then((_) {
-      print('all done render page');
-      var page = Page.register();
-      renderComponent(page(), querySelector('#page'));
-      print("Initial sync");
-    });
+
+
+    print('all done render page');
+    var page = Page.register();
+    renderComponent(page(), querySelector('#page'));
+    print("Initial sync");
+
   }).catchError((e) {
     print(e);
   });
@@ -71,8 +56,18 @@ class Page extends Component {
 
   StreamSubscription updateSubscription;
 
-  sellectSubs(subscription){
-    selectedCollection = subscription.collection;
+  sellectSubs(subscriptionName){
+    if (!subscriptions.containsKey(subscriptionName)) {
+      subscriptions[subscriptionName] = subscriber.subscribe(subscriptionName)..restart();
+      subscriptions[subscriptionName].collection.addIndex(['_id']);
+    }
+    loading = 'Loading';
+    redraw();
+    subscriptions[subscriptionName].initialSync.then((_){
+      loading = 'Finished';
+      redraw();
+    });
+    selectedCollection = subscriptions[subscriptionName].collection;
     if (updateSubscription != null) updateSubscription.cancel();
     updateSubscription = selectedCollection.onChange.listen((_) { print('onChange');redraw();});
     redraw();
@@ -83,57 +78,53 @@ class Page extends Component {
   var newDocument = new DataReference('');
   var deleteDocument = new DataReference('');
   var filed = new DataReference('_id');
-
+  var loading = "Nothing loaded";
   render() {
-   return div({},[
-    mButton(onClick: () => sellectSubs(playerSubscription), content: 'Players'),
-    '  ',
-    mButton(onClick: () => sellectSubs(userSubscription), content: 'Users'),
-    '  ',
-    mButton(onClick: () => sellectSubs(clubSubscription), content: 'Club'),
-    '  ',
-    mButton(onClick: () => sellectSubs(matchSubscription), content: 'Match'),
-    '  ',
-    mButton(onClick: () => sellectSubs(roundSubscription), content: 'Round'),
-    '  ',
-    mButton(onClick: () => sellectSubs(userRoundSubscription), content: 'UserRound'),
-        '  ',
-    div({},[
+   return div({},
+     allCollection.map((sub) =>
+         span({},[
+           mButton(onClick: () => sellectSubs(sub), content: sub),
+           ' - '
+         ])
+     ).toList()..addAll([
+      div({},'Loading state: $loading'),
       div({},[
-        'Field key1',
-        mI(value:filed),
-        'value in JSON:',
-        mI(value:select),
-        mButton(onClick: () => redraw(), content: 'Filter'),
-      ]),
-      div({},[
-        'value in JSON:',
-        mI(value:newDocument),
-        mButton(onClick: () { selectedCollection.add(JSON.decode(newDocument.value)); redraw();}, content: 'Add'),
-      ]),
-      div({},[
-        'Remove document Id in json:',
-        mI(value:deleteDocument),
-        mButton(onClick: () {
-          selectedCollection.remove(
-              selectedCollection.findBy('_id', JSON.decode(deleteDocument.value)).first
-          ); redraw();}, content: 'Delete'),
-      ]),
-      div({},[
-        'Total documents',
-        (selectedCollection != null)?selectedCollection.length : 'not selected',
-      ]),
-    (selectedCollection != null)?
-      ul({},
-         selectedCollection.where((item) => select.value =='' || item[filed.value] == JSON.decode(select.value)
-         || (JSON.decode(select.value) != null && item[filed.value] !=null &&
-                item[filed.value].toString().toLowerCase() ==  JSON.decode(select.value).toString().toLowerCase()))
-           .map((item) => li({}, item['_id'] == expanded ? renderOneDocument(item) : renderReadOnlyDocument(onEdit, item))).toList()
-       )
-      :
-      div({})
-    ])
-   ]);
+        div({},[
+          'Field key1',
+          mI(value:filed),
+          'value in JSON:',
+          mI(value:select),
+          mButton(onClick: () => redraw(), content: 'Filter'),
+        ]),
+        div({},[
+          'value in JSON:',
+          mI(value:newDocument),
+          mButton(onClick: () { selectedCollection.add(JSON.decode(newDocument.value)); redraw();}, content: 'Add'),
+        ]),
+        div({},[
+          'Remove document Id in json:',
+          mI(value:deleteDocument),
+          mButton(onClick: () {
+            selectedCollection.remove(
+                selectedCollection.findBy('_id', JSON.decode(deleteDocument.value)).first
+            ); redraw();}, content: 'Delete'),
+        ]),
+        div({},[
+          'Total documents',
+          (selectedCollection != null)?selectedCollection.length : 'not selected',
+        ]),
+      (selectedCollection != null)?
+        ul({},
+           selectedCollection.where((item) => select.value =='' || item[filed.value] == JSON.decode(select.value)
+           || (JSON.decode(select.value) != null && item[filed.value] !=null &&
+                  item[filed.value].toString().toLowerCase() ==  JSON.decode(select.value).toString().toLowerCase()))
+             .map((item) => li({}, item['_id'] == expanded ? renderOneDocument(item) : renderReadOnlyDocument(onEdit, item))).toList()
+         )
+        :
+        div({})
+      ])
+     ])
+    );
   }
 
 }
