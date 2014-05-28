@@ -7,17 +7,29 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:html';
 
-import 'package:react/react_client.dart' as react;
-import "package:react/react.dart";
+//import 'package:react/react_client.dart' as react;
+//import "package:react/react.dart";
+import 'package:tiles/tiles_browser.dart' as tiles;
+import 'package:tiles/tiles.dart' as tiles;
 
 Connection connection;
 Subscriber subscriber;
 Map<String, Subscription> subscriptions = {};
 final List allCollection = const ['player', 'club', 'user', 'match', 'round', 'user_rank', 'bucket_user'];
 
+
+div(props,[children]) => tiles.div(props: props, children: children);
+span(props,[children]) => tiles.span(props: props, children: children);
+ul(props,[children]) => tiles.ul(props: props, children: children);
+li(props,[children]) => tiles.li(props: props, children: children);
+input(props,[children]) => tiles.input(props: props, children: children);
+pre(props,[children]) => tiles.pre(props: props, children: children);
+button(props,[children]) => tiles.button(props: props, children: children);
+b(props,[children]) => tiles.b(props: props, children: children);
+
 main() {
   print('Javascript started');
-  react.setClientConfiguration();
+  tiles.initTilesBrowserConfiguration();
   print('will create connection');
   connection =
       createHttpConnection("/resources/", new Duration(milliseconds: 2000));
@@ -29,7 +41,7 @@ main() {
 
     print('all done render page');
     var page = Page.register();
-    renderComponent(page(), querySelector('#page'));
+    tiles.mountComponent(page(), querySelector('#page'));
     print("Initial sync");
 
   }).catchError((e) {
@@ -38,11 +50,11 @@ main() {
 }
 
 
-class Page extends Component {
+class Page extends tiles.Component {
 
   static register() {
-    var _registeredComponent = registerComponent(() => new Page());
-    return () => _registeredComponent({});
+    var _registeredComponent = tiles.registerComponent(({props, children}) => new Page());
+    return () => _registeredComponent();
   }
 
   var expanded = null;
@@ -52,7 +64,7 @@ class Page extends Component {
     redraw();
   }
 
-  Page();
+  Page() : super({});
 
   StreamSubscription updateSubscription;
 
@@ -111,14 +123,23 @@ class Page extends Component {
         ]),
         div({},[
           'Total documents',
-          (selectedCollection != null)?selectedCollection.length : 'not selected',
+          (selectedCollection != null)?selectedCollection.length.toString() : 'not selected',
         ]),
       (selectedCollection != null)?
         ul({},
-           selectedCollection.where((item) => select.value =='' || item[filed.value] == JSON.decode(select.value)
-           || (JSON.decode(select.value) != null && item[filed.value] !=null &&
-                  item[filed.value].toString().toLowerCase() ==  JSON.decode(select.value).toString().toLowerCase()))
-             .map((item) => li({}, item['_id'] == expanded ? renderOneDocument(item) : renderReadOnlyDocument(onEdit, item))).toList()
+           selectedCollection
+             .where((item) => select.value =='' ||
+                              item[filed.value] == JSON.decode(select.value) ||
+                              (JSON.decode(select.value) != null &&
+                                item[filed.value] !=null &&
+                                item[filed.value].toString().toLowerCase() ==  JSON.decode(select.value).toString().toLowerCase()))
+             .map((item) =>
+               li({}, item['_id'] == expanded ?
+                   renderOneDocument(item)
+                 :
+                   renderReadOnlyDocument(onEdit, item)
+               ))
+             .toList()
          )
         :
         div({})
@@ -158,7 +179,7 @@ toPrettyJson(document, [indent = ""]) {
 
 renderReadOnlyDocument(Function onEdit, DataMap document) {
   return [
-          button({'onClick': (e) => onEdit(document['_id'])}, "Edit"),
+          tiles.button(listeners: {'onClick': (c,e) => onEdit(document['_id'])}, children: "Edit"),
           pre({}, toPrettyJson(document))
          ];
 }
@@ -236,30 +257,30 @@ InputType mI = Input.register(/*constructor param*/);
 
 typedef InputType({String id, String type, String className, value, String placeholder, bool readOnly, Function onChange, Function onBlur, String name});
 
-class Input extends Component {
+class Input extends tiles.Component {
   static InputType register(/*constructor param*/) {
-    var _registeredComponent = registerComponent(() => new Input(/*constructor param*/));
+    var _registeredComponent = tiles.registerComponent(({props, children}) => new Input(props));
     return ({String id:null, String type:'text', String className:'', value:null,
       String placeholder:'', bool readOnly:false, onChange: null, onBlur: null, String name:''}) {
 
       //TODO maybe create it
       assert(value is DataReference);
-
-      return _registeredComponent({
+      return _registeredComponent(props: {
         'id': id,
         'type' : type,
         'name': name,
-        'className': className,
+        'class': className,
         'placeholder': placeholder,
         'value': value,
         'readOnly' : readOnly,
         'onChange': onChange,
         'onBlur': onBlur
-      },null);
+      });
     };
   }
+  Input([props]): super(props);
 
-  onChange(e) {
+  onChange(c,e) {
     var value = e.target.value;
     if (props['type'] == 'checkbox') value = e.target.checked;
     if (props['readOnly']) return;
@@ -268,24 +289,22 @@ class Input extends Component {
     if (props['onChange'] != null) props['onChange'](value);
   }
 
-  onBlur(e) {
+  onBlur(c,e) {
     if (props['onBlur'] != null)  props['onBlur'](e.target.value);
   }
 
-  render() {
-    return input({
+  render() =>
+     tiles.input(props: {
       'id': props['id'],
       'type': props['type'],
       'name': props['name'],
       'placeholder': props['placeholder'],
-      'className': props['inputClass'],
+      'class': props['inputClass'],
       'checked': (props['type'] == 'checkbox')?props['value'].value:null,
       'value': props['value'].value,
-      'onChange': onChange,
-      'onBlur': onBlur
-    });
-  }
+    }, listeners: {'onChange': onChange, 'onBlur': onBlur});
+
 }
 
 mButton({String className:'',Function onClick:null, String content:'', bool isDisabled: false}) =>
-    span({'className': 'myButton $className',  'onClick': (e) => (onClick==null || isDisabled)?null:onClick()}, content);
+    tiles.span(props: {'class': 'myButton $className'}, children:content, listeners: { 'onClick': (c,e) => (onClick==null || isDisabled)?null:onClick()});
