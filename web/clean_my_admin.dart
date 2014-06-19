@@ -15,7 +15,7 @@ import 'package:tiles/tiles.dart' as tiles;
 Connection connection;
 Subscriber subscriber;
 Map<String, Subscription> subscriptions = {};
-final List allCollection = const ['player', 'club', 'user', 'match', 'round', 'user_rank', 'bucket_user'];
+final List allCollection = const ['player', 'club', 'user', 'match', 'round', 'user_rank', 'bucket_user', 'transaction', 'player_archive', 'psc_buckets'];
 
 
 div(props,[children]) => tiles.div(props: props, children: children);

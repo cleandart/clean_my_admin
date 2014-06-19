@@ -4,7 +4,7 @@ import 'package:clean_ajax/server.dart';
 import 'package:clean_backend/clean_backend.dart';
 import 'package:clean_router/common.dart';
 
-final List allCollection = const ['player', 'club', 'user', 'match', 'round', 'user_rank', 'bucket_user'];
+final List allCollection = const ['player', 'club', 'user', 'match', 'round', 'user_rank', 'bucket_user', 'transaction', 'player_archive', 'psc_buckets'];
 
 void main(List<String> args) {
   runZoned(() {
