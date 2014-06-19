@@ -9,9 +9,9 @@ final List allCollection = const ['player', 'club', 'user', 'match', 'round', 'u
 void main(List<String> args) {
   runZoned(() {
     //MongoDatabase mongodb = new MongoDatabase('mongodb://stage.fanligy.sk/devel');
-    //MongoDatabase mongodb = new MongoDatabase('mongodb://stage.fanligy.sk/stage');
+    MongoDatabase mongodb = new MongoDatabase('mongodb://stage.fandim.sk/stage');
     //MongoDatabase mongodb = new MongoDatabase('mongodb://stage.fanligy.sk/testing');
-    MongoDatabase mongodb = new MongoDatabase('mongodb://0.0.0.0:27017/devel');
+    //MongoDatabase mongodb = new MongoDatabase('mongodb://0.0.0.0:27017/devel');
     //MongoDatabase mongodb = new MongoDatabase('mongodb://prod:futbaltojehra@fanligy.sk/prod');
     //MongoDatabase mongodb = new MongoDatabase('mongodb://devel:futbaltojehra@stage.fanligy.sk/devel');
     Future.wait(mongodb.init).then((_) {
