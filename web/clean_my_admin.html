@@ -64,32 +64,5 @@
     <script type="application/dart" src="clean_my_admin.dart"></script>
     <!-- for this next line to work, your pubspec.yaml file must have a dependency on 'browser' -->
     <script src="packages/browser/dart.js"></script>
- <!--
-  <div player-list >
-    <h3>Player List</h3>
-    <ul>
-      <li ng-repeat="player in ctrl.playerlist">
-        <ul>
-           <li ng-repeat="entry in ctrl.getKeys(player)">
-            <b>{{entry}}</b>: {{player[entry].runtimeType}}
-            <input ng-if="player[entry].runtimeType.toString() == 'String' && entry != '_id'" ng-model="player[entry]" type="text"></input>
-            <span ng-if="!(player[entry].runtimeType.toString() == 'String' && entry != '_id')">{{player[entry]}}</span>
-            <button ng-click="ctrl.save(player, entry)">SAVE FIELD</button>
-            <span ng-if="player[entry] == null">null</span>
-            <button ng-click="ctrl.removeField(player, entry)">REMOVE FIELD</button>
-           </li>
-           <input type="text" ng-model="fieldname"></input>
-           <button ng-click="ctrl.addField(player, fieldname)">ADD FIELD</button>
-        </ul>
-        <button ng-click="ctrl.removePlayer(player)">REMOVE</button>
-      </li>
-    </ul>
-    <button ng-click="ctrl.addPlayer()" >ADD PLAYER</button>
-  </div>
-
-  <script src="packages/shadow_dom/shadow_dom.min.js"></script>
-  <script type="application/dart" src="clean_my_admin.dart"></script>
-  <script type="text/javascript" src="packages/browser/dart.js"></script>
-  -->
 </body>
 </html>

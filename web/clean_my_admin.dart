@@ -6,6 +6,7 @@ import 'package:clean_sync/client.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:html';
+import 'package:clean_my_admin/config.dart';
 
 //import 'package:react/react_client.dart' as react;
 //import "package:react/react.dart";
@@ -15,7 +16,6 @@ import 'package:tiles/tiles.dart' as tiles;
 Connection connection;
 Subscriber subscriber;
 Map<String, Subscription> subscriptions = {};
-final List allCollection = const ['player', 'club', 'user', 'match', 'round', 'user_rank', 'bucket_user', 'transaction', 'player_archive', 'psc_buckets'];
 
 
 div(props,[children]) => tiles.div(props: props, children: children);
@@ -69,6 +69,7 @@ class Page extends tiles.Component {
   StreamSubscription updateSubscription;
 
   sellectSubs(subscriptionName){
+    filteredSelected.value = null;
     if (!subscriptions.containsKey(subscriptionName)) {
       subscriptions[subscriptionName] = subscriber.subscribe(subscriptionName)..restart();
       subscriptions[subscriptionName].collection.addIndex(['_id']);
@@ -85,20 +86,95 @@ class Page extends tiles.Component {
     redraw();
   }
 
+
+
   DataSet selectedCollection = null;
   var select = new DataReference('');
   var newDocument = new DataReference('');
   var deleteDocument = new DataReference('');
   var filed = new DataReference('_id');
   var loading = "Nothing loaded";
-  render() {
-   return div({},
-     allCollection.map((sub) =>
+
+  DataMap filtered = new DataMap.from({'collection': 'round', 'find':'{}'});
+  DataReference filteredSelected = new DataReference(null);
+  Subscription filteredSubs = subscriber.subscribe('filtered');
+  DataSet get filteredColl => filteredSubs.collection;
+  DataReference filteredShow = new DataReference('[]');
+  selectFiltered(){
+    filteredSelected.value = true;
+    redraw();
+  }
+
+  loadFiltered() {
+    filteredSubs.restart({'collection':filtered['collection'], 'find': JSON.decode(filtered['find'])});
+    if (updateSubscription != null) updateSubscription.cancel();
+    updateSubscription = filteredSubs.collection.onChange.listen((_) { print('onChange');redraw();});
+  }
+
+  prefillFiltered(val) {
+    filtered['collection'] = val;
+    filtered['find'] = '{}';
+    loadFiltered();
+    redraw();
+  }
+
+  renderMenu() =>
+    div({},[
+      mButton(className: (filteredSelected.value==true)?'green':'', onClick: () => selectFiltered(), content: 'filtered'),
+      '  ',
+      span({},
+        allCollection.map((sub) =>
          span({},[
            mButton(className: (subscriptions[sub]!=null)?'green':'', onClick: () => sellectSubs(sub), content: sub),
            ' - '
          ])
-     ).toList()..addAll([
+        ).toList()
+      )
+    ]);
+
+  renderFiltered() =>
+    div({},[
+      renderMenu(),
+      div({},
+        allCollection.map((sub) =>
+         span({},[
+           mButton(className: (filtered['collection']==sub)?'green':'', onClick: () => prefillFiltered(sub), content: sub),
+           ' - '
+         ])
+        ).toList()
+      ),
+      div({},[
+        'Collection name',
+        mI(value:filtered.ref('collection')),
+        'filter property in JSON:',
+        mI(value:filtered.ref('find')),
+        mButton(onClick: loadFiltered, content: 'Load subs'),
+        'show property as String in List:',
+        mI(value:filteredShow),
+        mButton(onClick: redraw, content: 'Refilter'),
+      ]),
+      div({},[
+       'Total documents',
+       filteredColl.length.toString()
+      ]),
+      ul({},
+         filteredColl
+           .map((item) =>
+             li({}, item['_id'] == expanded ?
+                 renderOneDocument(item)
+               :
+                 renderReadOnlyDocument(onEdit, item, JSON.decode(filteredShow.value))
+             ))
+           .toList()
+       )
+    ]);
+
+  render() {
+   if (filteredSelected.value == true) return renderFiltered();
+   return
+   div({},[
+     div({}, renderMenu()),
+     div({},[
       div({},'Loading state: $loading'),
       div({},[
         div({},[
@@ -145,19 +221,30 @@ class Page extends tiles.Component {
         div({})
       ])
      ])
-    );
+    ]);
   }
 
 }
 
-toPrettyJson(document, [indent = ""]) {
+shouldShowFilter(List<String> filter, String key) => filter.isEmpty ||
+  filter.any((i) => i == key || i.startsWith('$key.'));
+
+strip(List<String> filter) => (filter.isEmpty)? []:
+  filter.where((String i) => i.contains('.')).map((i) => (i.substring(i.indexOf('.')+1))).toList();
+
+toPrettyJson(document, [indent = "", List<String> showFilter = const []]) {
   var indentValue = "  ";
   getBody(keys) {
      var result = [];
      for (var key in keys) {
-       var value = toPrettyJson(document[key], indent + indentValue);
-       if (key is String) key = '"$key"';
-       result.add('$indentValue$indent$key: $value');
+       if (showFilter.isEmpty || shouldShowFilter(showFilter, key)) {
+         var value = toPrettyJson(document[key], indent + indentValue, strip(showFilter));
+         if (key is String) key = '"$key"';
+         result.add('$indentValue$indent$key: $value');
+       } else {
+         if (key is String) key = '"$key"';
+         result.add('$indentValue$indent$key: <- hidden');
+       }
      }
      return result.join("\n");
    }
@@ -177,10 +264,11 @@ toPrettyJson(document, [indent = ""]) {
   }
 }
 
-renderReadOnlyDocument(Function onEdit, DataMap document) {
+renderReadOnlyDocument(Function onEdit, DataMap document, [showFilter = const []]) {
   return [
-          tiles.button(listeners: {'onClick': (c,e) => onEdit(document['_id'])}, children: "Edit"),
-          pre({}, toPrettyJson(document))
+          tiles.button(listeners: {'onClick': (c,e) => onEdit(document['_id'])}, children: "Edit \\/"),
+          pre({}, toPrettyJson(document, '', showFilter)),
+          tiles.button(listeners: {'onClick': (c,e) => onEdit(document['_id'])}, children: "Edit /\\"),
          ];
 }
 
