@@ -32,7 +32,7 @@ void main(List<String> args) {
     mongoDbConfig.keys.forEach((mongoKey){
       publish('${mongoKey}-filtered', (args) => waitForMongo(mongoKey, args));
     });
-    Backend.bind('0.0.0.0', 8088, "").then((Backend backend) {
+    Backend.bind('0.0.0.0', 8091, "").then((Backend backend) {
 
           // ROUTES
           backend.router.addRoute('resources', new Route('/resources/'));
