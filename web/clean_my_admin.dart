@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:html';
 import 'package:clean_my_admin/config.dart';
+import 'package:clean_my_admin/page.dart';
 
 //import 'package:react/react_client.dart' as react;
 //import "package:react/react.dart";
@@ -16,16 +17,6 @@ import 'package:tiles/tiles.dart' as tiles;
 Connection connection;
 Subscriber subscriber;
 Map<String, Subscription> subscriptions = {};
-
-
-div(props,[children]) => tiles.div(props: props, children: children);
-span(props,[children]) => tiles.span(props: props, children: children);
-ul(props,[children]) => tiles.ul(props: props, children: children);
-li(props,[children]) => tiles.li(props: props, children: children);
-input(props,[children]) => tiles.input(props: props, children: children);
-pre(props,[children]) => tiles.pre(props: props, children: children);
-button(props,[children]) => tiles.button(props: props, children: children);
-b(props,[children]) => tiles.b(props: props, children: children);
 
 main() {
   print('Javascript started');
@@ -49,350 +40,328 @@ main() {
   });
 }
 
+DataReference dbRef = new DataReference(mongoDbDefault);
+var subsNameRef = new DataReference(null);
+
+var filteringValue = new DataReference({});
+
+var cFilteringPicker = FilteringPicker.register();
+class FilteringPicker extends tiles.Component {
+  static register() {
+    var _registeredComponent = tiles.registerComponent(({props, children}) => new FilteringPicker());
+    return () => _registeredComponent();
+  }
+  FilteringPicker(): super({});
+
+  List<StreamSubscription> ss;
+  didMount() {
+    ss = [
+      filterValue.onChange.listen((_) {
+        try {
+          filteringValue.value = JSON.decode(filterValue.value);
+          filterValid.value = true;
+        } catch (e){
+          filterValid.value = false;
+        }
+        redraw();
+      }),
+      filterValid.onChange.listen((_) =>redraw()),
+      subsNameRef.onChange.listen((_) =>redraw()),
+    ];
+  }
+
+  willUnmount() {
+    ss.forEach((ss) => ss.cancel());
+  }
+
+  var filterValue = new DataReference('{}');
+  var filterValid = new DataReference(true);
+
+  render() =>
+    div({},[
+      b({},'Filtering value: '),
+      mI(value: filterValue),
+      filterValid.value == false?
+          span({},"INVALID JSON")
+        :
+          span({},""),
+      span({},
+        ((filteringConstatns[subsNameRef.value] is Map)? filteringConstatns[subsNameRef.value]: {}).
+        keys.map((key) =>
+            mButton(onClick: () => filterValue.value = filteringConstatns[subsNameRef.value][key],
+                    content: '$key - ')
+        ).toList()
+      )
+    ]);
+}
+
+var fieldsHide = new DataReference([]);
+
+
+Subscription prevSub;
+DataReference<Subscription> subs = reactiveRef([dbRef], () {
+  print('Restarting subsctiption with new database: ${dbRef.value}');
+  if (prevSub != null) prevSub.dispose();
+  prevSub = subscriber.subscribe('${dbRef.value}-filtered');
+  startedSub.value = false;
+  return prevSub;
+});
+DataReference startedSub = new DataReference(false);
+
+
+var cAddDocument = AddDocument.register();
+class AddDocument extends tiles.Component {
+  static register() {
+     var _registeredComponent = tiles.registerComponent(({props, children}) => new AddDocument());
+     return () => _registeredComponent();
+   }
+  AddDocument(): super({});
+
+  var documentToAdd = new DataReference('');
+  var ss;
+  didMount() {
+    ss = documentToAdd.onChange.listen((_) => redraw());
+  }
+
+  willUnmount() {
+    ss.forEach((ss) => ss.cancel());
+  }
+
+  render() =>
+    div({}, [
+      'Add document from JSON:',
+      mI(value:documentToAdd),
+      mButton(onClick: () { subs.value.collection.add(JSON.decode(documentToAdd.value)); redraw();}, content: 'Add'),
+    ]);
+}
+
+
+DataReference skipDoc = new DataReference('0');
+DataReference takeDoc = new DataReference('10');
+
+var cLimitDocuments = LimitDocuments.register();
+class LimitDocuments extends tiles.Component {
+  static register() {
+     var _registeredComponent = tiles.registerComponent(({props, children}) => new LimitDocuments());
+     return () => _registeredComponent();
+   }
+  LimitDocuments(): super({});
+
+  render() =>
+    div({}, [
+      span({},'Limit documents skip: '),
+      mI(value:skipDoc),
+      span({},'take: '),
+      mI(value:takeDoc),
+    ]);
+}
+
+var cDocumentView = DocumentView.register();
+class DocumentView extends tiles.Component {
+  static register() {
+    var _registeredComponent = tiles.registerComponent(({props, children}) => new DocumentView());
+    return () => _registeredComponent();
+  }
+  DocumentView(): super({});
+
+  Subscription get subsctiption => subs.value;
+
+  var ss,ss1,ss2;
+  didMount() {
+    var ss1 = onChange([filteringValue, subsNameRef]).listen((_) {
+      print('Restarting subsctiption: ${subsNameRef.value} filter: ${filteringValue.value}');
+      subsctiption.restart({'collection': subsNameRef.value, 'find': filteringValue.value});
+      startedSub.value = true;
+      if (ss != null) ss.cancel();
+      expanded.value = null;
+      subsctiption.initialSync.then((_) => redraw()).catchError((e)=> print('Error: $e'));
+      ss = subsctiption.collection.onChange.listen((_) => redraw());
+    });
+    var ss2 = onChange([
+      startedSub,
+      expanded,
+      fieldsHide,
+      subs,
+      skipDoc,
+      takeDoc,
+    ]).listen((_) => redraw());
+  }
+
+  willUnmount() {
+    if (ss1 != null) ss1.cancel();
+    if (ss2 != null) ss2.cancel();
+  }
+
+  var expanded = new DataReference(null);
+
+  showHistoryFnc(id) {
+    showHistory.value = true;
+    historyDbRef.value = dbRef.value;
+    historySubsName.value = subsNameRef.value;
+    historyIdPicker.value = id;
+  }
+
+  editDocument(id) {
+    expanded.value = id;
+  }
+
+  render() =>
+    div({},[
+      cDbPicker(dbRef),
+      cSubsPicker(subsNameRef),
+      cAddDocument(),
+      cFilteringPicker(),
+      cFieldHider(fieldsHide, subsNameRef),
+      cLimitDocuments(),
+      cStatus(),
+      mButton(onClick: () => expanded.value = '', content: "Go to readonly"),
+      ul({},
+         subsctiption.collection.skip(int.parse(skipDoc.value)).take(int.parse(takeDoc.value))
+           .map((item) =>
+             li({}, item['_id'] == expanded.value ?
+                 renderOneDocument(item)
+               :
+                 renderReadOnlyDocument(showHistoryFnc, editDocument, item, fieldsHide.value)
+               )
+         ).toList()
+       )
+    ]);
+
+  cStatus() {
+    if (startedSub.value == false) return span({},"Nothing started");
+    if (!subsctiption.initialSyncCompleted) {
+      return span({},"Loading ...");
+    } else {
+      return span({},"Loaded count ${subsctiption.collection.length}");
+    }
+  }
+}
+
+var historyDbRef = new DataReference(mongoDbDefault);
+var historySubsName = new DataReference('');
+var historyIdPicker = new DataReference('hxj40106bcy0-1');
+var historyResult = new DataReference([]);
+var historyHide = new DataReference([]);
+
+var cHistoryView = HistoryView.register();
+class HistoryView extends tiles.Component {
+  static register() {
+    var _registeredComponent = tiles.registerComponent(({props, children}) => new HistoryView());
+    return () => _registeredComponent();
+  }
+  HistoryView(): super({});
+
+  DataReference index = new DataReference(0);
+  DataReference loading = new DataReference(false);
+  DataReference colapsed = new DataReference(true);
+  var ss;
+  didMount(){
+    ss = onChange([
+      historyDbRef,
+      historySubsName,
+      historyIdPicker,
+      historyResult,
+      index,
+      loading,
+      historyHide,
+      colapsed,
+    ]).listen((_) => redraw());
+  }
+
+  willUnmount() {
+    if (ss!= null) ss.cancel();
+    historyResult.value = [];
+  }
+
+  loadHistory() {
+    loading.value = true;
+    index.value = 0;
+    connection.send(() => new ClientRequest('getHistory', {
+      'db': historyDbRef.value,
+      'collection': historySubsName.value,
+      '_id': historyIdPicker.value,
+    })).then((result) {
+      loading.value = false;
+      historyResult.value = result;
+    });
+  }
+
+  searchForChange() {
+    var start = index.value + 1;
+    while(start < historyResult.value.length && noChangeIn(historyResult.value[start])){
+      print(start);
+      start ++;
+    }
+    index.value = start;
+  }
+
+  render() =>
+    div({},[
+      cDbPicker(historyDbRef),
+      cSubsPicker(historySubsName),
+      div({},[
+        'Id of document:',
+        mI(value: historyIdPicker),
+      ]),
+      cFieldHider(historyHide, historySubsName),
+      div({},
+        mButton(onClick: loadHistory, content: "Load history <----- CLICK ME TO RELOAD")
+      ),
+      div({},[
+        mButton(onClick: searchForChange, content: "Search for change"),
+        mButton(onClick: () => index.value = index.value + 1 , content: "Previous"),
+        span({}, ' - ${index.value + 1} / ${(historyResult.value as List).length}- '),
+        mButton(onClick: () => index.value = index.value == 0? 0: index.value - 1 , content: "Next"),
+        span({}, '   '),
+        mButton(onClick: () => colapsed.value = !colapsed.value, content: "Colapse"),
+      ]),
+      drawResult(),
+    ]);
+
+    drawResult() {
+      if (loading.value) return span({}, "loading");
+      if (historyResult.value.length == 0) return span({},"No results");
+      if (historyResult.value.length <= index.value) return span({},"Index out of range ${index.value + 1}/${historyResult.value.length}");
+      return div({},[
+        cHistoryDocument(historyResult.value[index.value], colapsed.value, historyHide),
+      ]);
+    }
+}
+
+DataReference showHistory = new DataReference(false);
 
 class Page extends tiles.Component {
-
   static register() {
     var _registeredComponent = tiles.registerComponent(({props, children}) => new Page());
     return () => _registeredComponent();
   }
+  Page(): super({});
 
-  var expanded = null;
-
-  onEdit(id) {
-    expanded = id;
-    redraw();
+  var ss;
+  didMount(){
+    ss = showHistory.onChange.listen((_) => redraw());
   }
 
-  Page() : super({});
-
-  StreamSubscription updateSubscription;
-
-  sellectSubs(subscriptionName){
-    filteredSelected.value = null;
-    if (!subscriptions.containsKey(subscriptionName)) {
-      subscriptions[subscriptionName] = subscriber.subscribe(subscriptionName)..restart();
-      subscriptions[subscriptionName].collection.addIndex(['_id']);
-    }
-    loading = 'Loading';
-    redraw();
-    subscriptions[subscriptionName].initialSync.then((_){
-      loading = 'Finished';
-      redraw();
-    });
-    selectedCollection = subscriptions[subscriptionName].collection;
-    if (updateSubscription != null) updateSubscription.cancel();
-    updateSubscription = selectedCollection.onChange.listen((_) { print('onChange');redraw();});
-    redraw();
-  }
-
-
-
-  DataSet selectedCollection = null;
-  var select = new DataReference('');
-  var newDocument = new DataReference('');
-  var deleteDocument = new DataReference('');
-  var filed = new DataReference('_id');
-  var loading = "Nothing loaded";
-
-  DataMap filtered = new DataMap.from({'collection': 'round', 'find':'{}'});
-  DataReference filteredSelected = new DataReference(null);
-  Subscription filteredSubs = subscriber.subscribe('filtered');
-  DataSet get filteredColl => filteredSubs.collection;
-  DataReference filteredShow = new DataReference('[]');
-  selectFiltered(){
-    filteredSelected.value = true;
-    redraw();
-  }
-
-  loadFiltered() {
-    filteredSubs.restart({'collection':filtered['collection'], 'find': JSON.decode(filtered['find'])});
-    if (updateSubscription != null) updateSubscription.cancel();
-    updateSubscription = filteredSubs.collection.onChange.listen((_) { print('onChange');redraw();});
-  }
-
-  prefillFiltered(val) {
-    filtered['collection'] = val;
-    filtered['find'] = '{}';
-    loadFiltered();
-    redraw();
-  }
-
-  renderMenu() =>
-    div({},[
-      mButton(className: (filteredSelected.value==true)?'green':'', onClick: () => selectFiltered(), content: 'filtered'),
-      '  ',
-      span({},
-        allCollection.map((sub) =>
-         span({},[
-           mButton(className: (subscriptions[sub]!=null)?'green':'', onClick: () => sellectSubs(sub), content: sub),
-           ' - '
-         ])
-        ).toList()
-      )
-    ]);
-
-  renderFiltered() =>
-    div({},[
-      renderMenu(),
-      div({},
-        allCollection.map((sub) =>
-         span({},[
-           mButton(className: (filtered['collection']==sub)?'green':'', onClick: () => prefillFiltered(sub), content: sub),
-           ' - '
-         ])
-        ).toList()
-      ),
-      div({},[
-        'Collection name',
-        mI(value:filtered.ref('collection')),
-        'filter property in JSON:',
-        mI(value:filtered.ref('find')),
-        mButton(onClick: loadFiltered, content: 'Load subs'),
-        'show property as String in List:',
-        mI(value:filteredShow),
-        mButton(onClick: redraw, content: 'Refilter'),
-      ]),
-      div({},[
-       'Total documents',
-       filteredColl.length.toString()
-      ]),
-      ul({},
-         filteredColl
-           .map((item) =>
-             li({}, item['_id'] == expanded ?
-                 renderOneDocument(item)
-               :
-                 renderReadOnlyDocument(onEdit, item, JSON.decode(filteredShow.value))
-             ))
-           .toList()
-       )
-    ]);
-
-  render() {
-   if (filteredSelected.value == true) return renderFiltered();
-   return
-   div({},[
-     div({}, renderMenu()),
-     div({},[
-      div({},'Loading state: $loading'),
-      div({},[
-        div({},[
-          'Field key1',
-          mI(value:filed),
-          'value in JSON:',
-          mI(value:select),
-          mButton(onClick: () => redraw(), content: 'Filter'),
-        ]),
-        div({},[
-          'value in JSON:',
-          mI(value:newDocument),
-          mButton(onClick: () { selectedCollection.add(JSON.decode(newDocument.value)); redraw();}, content: 'Add'),
-        ]),
-        div({},[
-          'Remove document Id in json:',
-          mI(value:deleteDocument),
-          mButton(onClick: () {
-            selectedCollection.remove(
-                selectedCollection.findBy('_id', JSON.decode(deleteDocument.value)).first
-            ); redraw();}, content: 'Delete'),
-        ]),
-        div({},[
-          'Total documents',
-          (selectedCollection != null)?selectedCollection.length.toString() : 'not selected',
-        ]),
-      (selectedCollection != null)?
-        ul({},
-           selectedCollection
-             .where((item) => select.value =='' ||
-                              item[filed.value] == JSON.decode(select.value) ||
-                              (JSON.decode(select.value) != null &&
-                                item[filed.value] !=null &&
-                                item[filed.value].toString().toLowerCase() ==  JSON.decode(select.value).toString().toLowerCase()))
-             .map((item) =>
-               li({}, item['_id'] == expanded ?
-                   renderOneDocument(item)
-                 :
-                   renderReadOnlyDocument(onEdit, item)
-               ))
-             .toList()
-         )
-        :
-        div({})
-      ])
-     ])
-    ]);
-  }
-
-}
-
-shouldShowFilter(List<String> filter, String key) => filter.isEmpty ||
-  filter.any((i) => i == key || i.startsWith('$key.'));
-
-strip(List<String> filter) => (filter.isEmpty)? []:
-  filter.where((String i) => i.contains('.')).map((i) => (i.substring(i.indexOf('.')+1))).toList();
-
-toPrettyJson(document, [indent = "", List<String> showFilter = const []]) {
-  var indentValue = "  ";
-  getBody(keys) {
-     var result = [];
-     for (var key in keys) {
-       if (showFilter.isEmpty || shouldShowFilter(showFilter, key)) {
-         var value = toPrettyJson(document[key], indent + indentValue, strip(showFilter));
-         if (key is String) key = '"$key"';
-         result.add('$indentValue$indent$key: $value');
-       } else {
-         if (key is String) key = '"$key"';
-         result.add('$indentValue$indent$key: <- hidden');
-       }
-     }
-     return result.join("\n");
-   }
-
-  if (document == null) return "null";
-  if (document is String) return '"${document}"';
-  if (document is num) return document;
-  if (document is bool) return document.toString();
-  if (document is DataMap) {
-    var keys = document.keys.toList()..sort();
-    return "{\n${getBody(keys)}\n$indent}";
-  }
-  if (document is DataList) {
-    var keys = [];
-    for (var i = 0; i < document.length; i++) keys.add(i);
-    return "[\n${getBody(keys)}\n$indent]";
-  }
-}
-
-renderReadOnlyDocument(Function onEdit, DataMap document, [showFilter = const []]) {
-  return [
-          tiles.button(listeners: {'onClick': (c,e) => onEdit(document['_id'])}, children: "Edit \\/"),
-          pre({}, toPrettyJson(document, '', showFilter)),
-          tiles.button(listeners: {'onClick': (c,e) => onEdit(document['_id'])}, children: "Edit /\\"),
-         ];
-}
-
-renderOneDocument(DataMap document) {
-  var addField = new DataReference('');
-  var addFieldVal = new DataReference('');
-  return ul({},
-      [li({},[
-                  'Key',
-                  mI(value: addField),
-                  'Value:',
-                  mI(value: addFieldVal),
-                  mButton(onClick: (){
-                    print('Add Field ${addField.value}');
-                    document[addField.value] = JSON.decode(addFieldVal.value);
-                  }, content: 'Add Field'),
-                  mButton(onClick: (){
-                    window.alert(JSON.encode(document));
-                  }, content: 'Show JSON'),
-                  ])]..addAll(
-      document.keys.map((key) {
-        if (key == '_id') {
-          return li({},[
-                        b({},key),
-                        ' ',
-                        span({},document[key].toString())
-                 ]);
-        } else if (document[key] is DataMap) {
-          return li({},[
-              b({},key),
-              mButton(onClick: (){
-                    document[key] = {};
-                    print('Clear ${key}');
-              }, content: 'Clear map'),
-              mButton(onClick: (){
-                document.remove(key);
-                print('Remove field ${key}');
-              }, content: 'Remove field'),
-              mButton(onClick: (){
-                window.alert(JSON.encode(document[key]));
-                print('Show json');
-              }, content: 'Show json'),
-              renderOneDocument(document[key])
-              ]);//
-        } else {
-          var val = new DataReference(JSON.encode(document[key]));
-          return li({},[
-           b({},key),
-           ' ',
-           document[key].runtimeType.toString(),
-           ' ',
-           mI(value: val),
-           ' - ',
-           mButton(onClick: (){
-             var newVal = JSON.decode(val.value);
-             print('Save ${val.value} decoded: $newVal');
-             document[key] = newVal;
-           }, content: 'Save'),
-            ' - ',
-           mButton(onClick: (){
-             document.remove(key);
-             print('Remove ${val.value}');
-           }, content: 'Remove field'),
-          // span({},document[key].toString())
-      ]);
-     }
-
-    }).toList())..addAll([
-    ])
-   );
-}
-
-InputType mI = Input.register(/*constructor param*/);
-
-typedef InputType({String id, String type, String className, value, String placeholder, bool readOnly, Function onChange, Function onBlur, String name});
-
-class Input extends tiles.Component {
-  static InputType register(/*constructor param*/) {
-    var _registeredComponent = tiles.registerComponent(({props, children}) => new Input(props));
-    return ({String id:null, String type:'text', String className:'', value:null,
-      String placeholder:'', bool readOnly:false, onChange: null, onBlur: null, String name:''}) {
-
-      //TODO maybe create it
-      assert(value is DataReference);
-      return _registeredComponent(props: {
-        'id': id,
-        'type' : type,
-        'name': name,
-        'class': className,
-        'placeholder': placeholder,
-        'value': value,
-        'readOnly' : readOnly,
-        'onChange': onChange,
-        'onBlur': onBlur
-      });
-    };
-  }
-  Input([props]): super(props);
-
-  onChange(c,e) {
-    var value = e.target.value;
-    if (props['type'] == 'checkbox') value = e.target.checked;
-    if (props['readOnly']) return;
-    props['value'].value = value;
-    redraw();
-    if (props['onChange'] != null) props['onChange'](value);
-  }
-
-  onBlur(c,e) {
-    if (props['onBlur'] != null)  props['onBlur'](e.target.value);
+  willUnmount() {
+    if (ss!= null) ss.cancel();
   }
 
   render() =>
-     tiles.input(props: {
-      'id': props['id'],
-      'type': props['type'],
-      'name': props['name'],
-      'placeholder': props['placeholder'],
-      'class': props['inputClass'],
-      'checked': (props['type'] == 'checkbox')?props['value'].value:null,
-      'value': props['value'].value,
-    }, listeners: {'onChange': onChange, 'onBlur': onBlur});
-
+    div({},[
+      span({},[
+        mButton(className:(!showHistory.value)?'green':'',
+            onClick: () => showHistory.value = false,
+            content: 'Document mode'),
+        span({},'    -    '),
+        mButton(className:(showHistory.value)?'green':'',
+            onClick: () => showHistory.value = true,
+            content: 'History mode'),
+      ]),
+      div({},
+        showHistory.value?
+            cHistoryView()
+          :
+            cDocumentView()
+      )
+    ]);
 }
-
-mButton({String className:'',Function onClick:null, String content:'', bool isDisabled: false}) =>
-    tiles.span(props: {'class': 'myButton $className'}, children:content, listeners: { 'onClick': (c,e) => (onClick==null || isDisabled)?null:onClick()});

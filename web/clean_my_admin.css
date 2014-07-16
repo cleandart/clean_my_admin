@@ -12,6 +12,10 @@ h1, p {
   color: #333;
 }
 
+.wideInput {
+  width: 100px;
+}
+
 #sample_container_id {
   width: 100%;
   height: 400px;

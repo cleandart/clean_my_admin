@@ -10,3 +10,5 @@ dependencies:
   logging: any
   react: any
   tiles: any
+  mongo_dart: any
+  collection: any
