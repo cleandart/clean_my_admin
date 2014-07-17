@@ -12,3 +12,4 @@ dependencies:
   tiles: any
   mongo_dart: any
   collection: any
+  quiver: any

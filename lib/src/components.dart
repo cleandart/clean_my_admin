@@ -8,6 +8,10 @@ input(props,[children]) => tiles.input(props: props, children: children);
 pre(props,[children]) => tiles.pre(props: props, children: children);
 button(props,[children]) => tiles.button(props: props, children: children);
 b(props,[children]) => tiles.b(props: props, children: children);
+table(props,[children]) => tiles.table(props: props, children: children);
+tr(props, [children]) => tiles.tr(props: props, children: children);
+td(props, [children]) => tiles.td(props: props, children: children);
+th(props, [children]) => tiles.th(props: props, children: children);
 br() => tiles.br();
 
 

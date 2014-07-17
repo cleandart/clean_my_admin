@@ -60,13 +60,15 @@ handleHistoryRequest(ServerRequest sr) {
   var db = sr.args['db'];
   var collName = sr.args['collection'];
   var id = sr.args['_id'];
+  var timestamp = sr.args['timestamp'];
+  print('time: $timestamp');
   return getMongo(db).then((mongoDb){
      var collection =  mongoDb.rawDb.collection('__clean_${collName}_history');
-     var collCursor = collection.find(
+     var collCursor = collection.find(new SelectorBuilder().lte("timestamp", DateTime.parse(timestamp)).and(
        new SelectorBuilder().eq("before._id", id)
-       .or(new SelectorBuilder().eq("after._id", id))
+       .or(new SelectorBuilder().eq("after._id", id)))
        .sortBy('timestamp', descending: true)
-       .limit(1000));
+       .limit(200));
     var res = collCursor.toList();
     return res.then((res1){
       res1.forEach((i) => i['_id'] = i['_id'].toString());

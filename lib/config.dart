@@ -7,7 +7,7 @@ final List allCollection = const ['player', 'club', 'user', 'match',
 
 
 
-final mongoDbDefault = 'stage';
+final mongoDbDefault = 'local';
 final Map mongoDbConfig = {
   'local'  : 'mongodb://0.0.0.0:27017/devel',
   'stage'  : 'mongodb://0.0.0.0:27017/stage',

@@ -18,7 +18,6 @@ class HistoryDocument extends tiles.Component {
     var before = doc["before"];
     var after = doc["after"];
     var bSame = noChangeIn(doc);
-    print('>$before<');
     return
     div({},[
       div({},[

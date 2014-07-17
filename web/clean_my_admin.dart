@@ -238,10 +238,13 @@ class DocumentView extends tiles.Component {
 }
 
 var historyDbRef = new DataReference(mongoDbDefault);
-var historySubsName = new DataReference('');
-var historyIdPicker = new DataReference('hxj40106bcy0-1');
+var historySubsName = new DataReference('user');
+var historyIdPicker = new DataReference('hxq0328p5gl0-1');
 var historyResult = new DataReference([]);
 var historyHide = new DataReference([]);
+var historyTimestamp = new DataReference(new DateTime.now());
+var historyDrawOverview = new DataReference(false);
+var historyViewDocId = new DataReference(-1);
 
 var cHistoryView = HistoryView.register();
 class HistoryView extends tiles.Component {
@@ -256,7 +259,8 @@ class HistoryView extends tiles.Component {
   DataReference colapsed = new DataReference(true);
   var ss;
   didMount(){
-    ss = onChange([
+    ss =
+        [onChange([
       historyDbRef,
       historySubsName,
       historyIdPicker,
@@ -265,21 +269,25 @@ class HistoryView extends tiles.Component {
       loading,
       historyHide,
       colapsed,
-    ]).listen((_) => redraw());
+      historyDrawOverview,
+    ]).listen((_) => redraw())];
   }
 
   willUnmount() {
-    if (ss!= null) ss.cancel();
+    if (ss!= null) ss.forEach((s) => s.cancel());
     historyResult.value = [];
   }
 
   loadHistory() {
+    historyDrawOverview.value = false;
     loading.value = true;
     index.value = 0;
+    print("load");
     connection.send(() => new ClientRequest('getHistory', {
       'db': historyDbRef.value,
       'collection': historySubsName.value,
       '_id': historyIdPicker.value,
+      'timestamp' : historyTimestamp.value.toIso8601String(),
     })).then((result) {
       loading.value = false;
       historyResult.value = result;
@@ -295,10 +303,22 @@ class HistoryView extends tiles.Component {
     index.value = start;
   }
 
+  searchFromTimestamp(DateTime time) {
+    var start = 0;
+    while((start < historyResult.value.length) && !DateTime.parse(historyResult.value[start]['timestamp']).isBefore(time)) {
+      print("Comparing: ${DateTime.parse(historyResult.value[start]['timestamp'])}");
+      start++;
+    }
+    index.value = start-1;
+  }
+
+  toggle(DataReference d) => d.value = !d.value;
+
   render() =>
     div({},[
       cDbPicker(historyDbRef),
       cSubsPicker(historySubsName),
+      cTimestampSearch(historyTimestamp),
       div({},[
         'Id of document:',
         mI(value: historyIdPicker),
@@ -313,9 +333,11 @@ class HistoryView extends tiles.Component {
         span({}, ' - ${index.value + 1} / ${(historyResult.value as List).length}- '),
         mButton(onClick: () => index.value = index.value == 0? 0: index.value - 1 , content: "Next"),
         span({}, '   '),
-        mButton(onClick: () => colapsed.value = !colapsed.value, content: "Colapse"),
+        mButton(onClick: () => toggle(colapsed), content: "Colapse"),
+        br(),
+        mButton(onClick: () => toggle(historyDrawOverview), content: "Show/Hide changes overview"),
       ]),
-      drawResult(),
+      historyDrawOverview.value ? cChangeOverview(historyResult, historyHide, ss1, ss2) : drawResult(),
     ]);
 
     drawResult() {
@@ -324,6 +346,7 @@ class HistoryView extends tiles.Component {
       if (historyResult.value.length <= index.value) return span({},"Index out of range ${index.value + 1}/${historyResult.value.length}");
       return div({},[
         cHistoryDocument(historyResult.value[index.value], colapsed.value, historyHide),
+        span({},'Document timestamp: ${historyResult.value[index.value]['timestamp']}, runtime type: ${historyResult.value[index.value]['timestamp'].runtimeType}')
       ]);
     }
 }
