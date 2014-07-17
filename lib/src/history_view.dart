@@ -18,6 +18,7 @@ class HistoryDocument extends tiles.Component {
     var before = doc["before"];
     var after = doc["after"];
     var bSame = noChangeIn(doc);
+    print('>$before<');
     return
     div({},[
       div({},[
@@ -43,25 +44,25 @@ class HistoryDocument extends tiles.Component {
         ]),
       ]),
       (colapsed)?
-          div({},
+          div({'key':'merged'},
             pre({}, toPrettyMergeJson(before, after, " ", showFilter.value))
           )
         :
-          div({"class":"leftright"},[
-            pre({"class":"left"},[
-              "Before:",
-              toPrettyJson(before, " ", showFilter.value)
+          div({"class":"leftright", 'key':'splitted'},[
+            div({"class":"left"},[
+              span({},"Before:"),
+              pre({},toPrettyJson(before, " ", showFilter.value))
             ]),
-            pre({"class":"right"},[
-              "After:",
-              toPrettyJson(after, " ", showFilter.value)
+            div({"class":"right"},[
+              span({},"After:"),
+              pre({},toPrettyJson(after, " ", showFilter.value))
             ]),
           ])
     ]);
   }
 }
 
-noChangeIn(doc) => same(new Map.from(doc['before'])..remove("__clean_version"), new Map.from(doc['after'])..remove("__clean_version"));
+noChangeIn(doc) => same(new Map.from(doc['before'])..remove("__clean_version")..remove("__clean_collection"), new Map.from(doc['after'])..remove("__clean_version")..remove("__clean_collection"));
 same(x,y) => const DeepCollectionEquality().equals(x,y);
 
 toPrettyMergeJson(before, after, [indent = "", List<String> showFilter = const []]) {

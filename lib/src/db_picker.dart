@@ -5,6 +5,7 @@ var cDbPicker = DbPicker.register();
 class DbPicker extends tiles.Component {
   static register() {
     var _registeredComponent = tiles.registerComponent(({props, children}) => new DbPicker(props));
+//    var _registeredComponent = tiles.registerComponent(() => new DbPicker());
     return (dbRef) => _registeredComponent(props: {'dbRef': dbRef});
   }
   DbPicker(props) : super(props);
