@@ -306,7 +306,6 @@ class HistoryView extends tiles.Component {
   searchFromTimestamp(DateTime time) {
     var start = 0;
     while((start < historyResult.value.length) && !DateTime.parse(historyResult.value[start]['timestamp']).isBefore(time)) {
-      print("Comparing: ${DateTime.parse(historyResult.value[start]['timestamp'])}");
       start++;
     }
     index.value = start-1;
