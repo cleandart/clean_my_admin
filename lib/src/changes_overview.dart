@@ -70,7 +70,7 @@ class ChangeOverview extends tiles.Component {
             th({},'Time')]
           )]
           ..addAll(enumerate(docs.value).map((d) =>
-          tr({"class": '${activeDoc.value == d.index ? "green" : ""}${equalDocs[d.value['_id']] ? " strike" : ""}'},[
+          tr({"class": '${activeDoc.value == d.index ? "green" : ""}${equalDocs[d.value['_id']] == true ? " strike" : ""}'},[
             td({},'${d.value['author']}'),
             td({},'${d.value['timestamp']}'),
             td({}, mButton(onClick: () => docClicked(d.index), content: "View")),
