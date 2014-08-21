@@ -3,7 +3,8 @@ library clean_my_admin.config;
 
 final List allCollection = const ['player', 'club', 'user', 'match',
   'round', 'user_rank', 'bucket_user', 'transaction',
-  'player_archive', 'psc_buckets', 'bucket_size', 'bucket_competition_info'];
+  'player_archive', 'psc_buckets', 'bucket_size', 'bucket_competition_info',
+  'user_action_log'];
 
 
 
@@ -18,6 +19,7 @@ final Map mongoDbConfig = {
   'ssh-stage'  : 'mongodb://0.0.0.0:27018/stage',
   'ssh-prod'   : 'mongodb://0.0.0.0:27018/prod',
   'ssh-live'   : 'mongodb://0.0.0.0:27018/live',
+  'ssh-testing'   : 'mongodb://0.0.0.0:27018/testing',
 };
 
 
