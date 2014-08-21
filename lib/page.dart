@@ -19,6 +19,7 @@ part 'src/history_view.dart';
 part 'src/field_hide.dart';
 part 'src/search_timestamp.dart';
 part 'src/changes_overview.dart';
+part 'src/author_change_overview.dart';
 
 var ss1 = window.onKeyDown.where((KeyboardEvent e) => e.keyCode == 87); // w
 var ss2 = window.onKeyDown.where((KeyboardEvent e) => e.keyCode == 83); // s

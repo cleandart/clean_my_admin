@@ -195,7 +195,7 @@ class DocumentView extends tiles.Component {
   var expanded = new DataReference(null);
 
   showHistoryFnc(id) {
-    showHistory.value = true;
+    showMode.value = true;
     historyDbRef.value = dbRef.value;
     historySubsName.value = subsNameRef.value;
     historyIdPicker.value = id;
@@ -237,12 +237,129 @@ class DocumentView extends tiles.Component {
   }
 }
 
+var changesAuthorRef = new DataReference("adjust_account_cron");
+var changesDbRef = new DataReference(mongoDbDefault);
+var changesSubsNameRef = new DataReference('user');
+var changesHideRef = new DataReference([]);
+var changesLimitRef = new DataReference(10);
+var changesSkipRef = new DataReference(0);
+DataReference<DateTime> changesTimeFromRef = new DataReference(new DateTime.now().subtract(new Duration(hours:1)));
+DataReference<DateTime> changesTimeToRef = new DataReference(new DateTime.now());
+var changesAuthorResultRef = new DataReference([]);
+var changesAuthorCountRef = new DataReference(0);
+
+var cAuthorChangesView = AuthorChangesView.register();
+class AuthorChangesView extends tiles.Component {
+  static register() {
+    var _registeredComponent = tiles.registerComponent(({props, children}) => new AuthorChangesView());
+    return () => _registeredComponent();
+  }
+
+  AuthorChangesView(): super({});
+
+  List<StreamSubscription> ss;
+  DataReference loadingRef = new DataReference(false);
+  DataReference index = new DataReference(0);
+
+  didMount() {
+    ss = [onChange([
+      changesAuthorRef,
+      changesDbRef,
+      changesSubsNameRef,
+      changesHideRef,
+      changesAuthorResultRef,
+      loadingRef,
+      changesLimitRef,
+      changesSkipRef,
+      changesAuthorCountRef,
+    ]).listen((_) => redraw())];
+  }
+
+  willUnmount() {
+    ss.forEach((s) => s.cancel());
+  }
+
+  loadCount() {
+    loadingRef.value = true;
+    connection.send(() => new ClientRequest('getAuthorChangesCount', {
+      'db': changesDbRef.value,
+      'collection': changesSubsNameRef.value,
+      'author': changesAuthorRef.value,
+      'fromTimestamp' : changesTimeFromRef.value.toIso8601String(),
+      'toTimestamp' : changesTimeToRef.value.toIso8601String(),
+      'limit': changesLimitRef.value is String ? num.parse(changesLimitRef.value) : changesLimitRef.value,
+      'skip': changesSkipRef.value is String ? num.parse(changesSkipRef.value) : changesSkipRef.value,
+    })).then((result) {
+      changesAuthorCountRef.value = result;
+      loadingRef.value = false;
+    });
+  }
+
+  loadChanges() {
+    loadingRef.value = true;
+    connection.send(() => new ClientRequest('getAuthorChanges', {
+      'db': changesDbRef.value,
+      'collection': changesSubsNameRef.value,
+      'author': changesAuthorRef.value,
+      'fromTimestamp' : changesTimeFromRef.value.toIso8601String(),
+      'toTimestamp' : changesTimeToRef.value.toIso8601String(),
+      'limit': changesLimitRef.value is String ? num.parse(changesLimitRef.value) : changesLimitRef.value,
+      'skip': changesSkipRef.value is String ? num.parse(changesSkipRef.value) : changesSkipRef.value,
+    })).then((result) {
+      changesAuthorResultRef.value = result;
+      loadingRef.value = false;
+    });
+  }
+
+  _nextPage() {
+    var newLimit = 2*changesLimitRef.value - changesSkipRef.value;
+    changesSkipRef.value = changesLimitRef.value;
+    changesLimitRef.value = newLimit;
+  }
+
+  _prevPage() {
+    var newSkip = 2*changesSkipRef.value - changesLimitRef.value;
+
+  }
+
+  render() =>
+      div({},[
+        cDbPicker(changesDbRef),
+        cSubsPicker(changesSubsNameRef),
+        cFieldHider(changesHideRef, changesSubsNameRef),
+        div({}, [
+          b({}, "Changes by author: "),
+          mI(value: changesAuthorRef),
+        ]),
+        cTimestampSearch(changesTimeFromRef, changesTimeToRef),
+        div({},
+          mButton(onClick: loadChanges, content: "Load changes <----- CLICK ME TO RELOAD")
+        ),
+        div({}, [
+          b({}, "Skip: "),
+          mI(value: changesSkipRef),
+        ]),
+        div({}, [
+          b({}, "Limit: "),
+          mI(value: changesLimitRef),
+        ]),
+//        div({},[
+//          b({}, "Total document count: "),
+//          span({}, "${changesAuthorCountRef.value}"),
+//          mButton(onClick: loadCount, content: " RELOAD "),
+//        ]),
+        loadingRef.value ? span({},"Loading.. please wait") : cAuthorChangeOverview(changesAuthorResultRef, changesHideRef, ss1, ss2),
+      ]);
+
+}
+
 var historyDbRef = new DataReference(mongoDbDefault);
 var historySubsName = new DataReference('user');
 var historyIdPicker = new DataReference('hz3xnd21q7b0-1');
 var historyResult = new DataReference([]);
 var historyHide = new DataReference([]);
-var historyTimestamp = new DataReference(new DateTime.now());
+DataReference<DateTime> historyFromTimestamp = new DataReference(new DateTime.now().subtract(new Duration(hours:1)));
+DataReference<DateTime> historyToTimestamp = new DataReference(new DateTime.now());
 var historyDrawOverview = new DataReference(false);
 var historyViewDocId = new DataReference(-1);
 
@@ -287,7 +404,8 @@ class HistoryView extends tiles.Component {
       'db': historyDbRef.value,
       'collection': historySubsName.value,
       '_id': historyIdPicker.value,
-      'timestamp' : historyTimestamp.value.toIso8601String(),
+      'fromTimestamp' : historyFromTimestamp.value.toIso8601String(),
+      'toTimestamp' : historyToTimestamp.value.toIso8601String(),
     })).then((result) {
       loading.value = false;
       historyResult.value = result;
@@ -317,7 +435,7 @@ class HistoryView extends tiles.Component {
     div({},[
       cDbPicker(historyDbRef),
       cSubsPicker(historySubsName),
-      cTimestampSearch(historyTimestamp),
+      cTimestampSearch(historyFromTimestamp, historyToTimestamp),
       div({},[
         'Id of document:',
         mI(value: historyIdPicker),
@@ -350,7 +468,11 @@ class HistoryView extends tiles.Component {
     }
 }
 
-DataReference showHistory = new DataReference(false);
+const HISTORY = "history";
+const DOCUMENT = "document";
+const AUTHOR_CHANGES = "authorChanges";
+
+DataReference showMode = new DataReference(DOCUMENT);
 
 class Page extends tiles.Component {
   static register() {
@@ -361,29 +483,35 @@ class Page extends tiles.Component {
 
   var ss;
   didMount(){
-    ss = showHistory.onChange.listen((_) => redraw());
+    ss = showMode.onChange.listen((_) => redraw());
   }
 
   willUnmount() {
     if (ss!= null) ss.cancel();
   }
 
+  _renderProperView() {
+    switch(showMode.value) {
+      case DOCUMENT: return cDocumentView();
+      case HISTORY: return cHistoryView();
+      case AUTHOR_CHANGES: return cAuthorChangesView();
+    }
+  }
+
+  _renderButton(mode, text) =>
+    mButton(className:(showMode.value == mode)?'green':'',
+        onClick: () => showMode.value = mode,
+        content: text);
+
   render() =>
     div({},[
       span({},[
-        mButton(className:(!showHistory.value)?'green':'',
-            onClick: () => showHistory.value = false,
-            content: 'Document mode'),
+        _renderButton(DOCUMENT, 'Document mode'),
         span({},'    -    '),
-        mButton(className:(showHistory.value)?'green':'',
-            onClick: () => showHistory.value = true,
-            content: 'History mode'),
+        _renderButton(HISTORY, 'History mode'),
+        span({},'    -    '),
+        _renderButton(AUTHOR_CHANGES, 'Author changes mode')
       ]),
-      div({},
-        showHistory.value?
-            cHistoryView()
-          :
-            cDocumentView()
-      )
+      div({}, _renderProperView())
     ]);
 }

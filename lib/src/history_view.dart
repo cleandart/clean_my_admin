@@ -62,7 +62,7 @@ class HistoryDocument extends tiles.Component {
 }
 
 noChangeIn(doc) => same(new Map.from(doc['before'])..remove("__clean_version")..remove("__clean_collection"), new Map.from(doc['after'])..remove("__clean_version")..remove("__clean_collection"));
-same(x,y) => const DeepCollectionEquality().equals(x,y);
+same(x,y) => x.toString() == y.toString();
 
 toPrettyMergeJson(before, after, [indent = "", List<String> showFilter = const []]) {
   var indentValue = "  ";
