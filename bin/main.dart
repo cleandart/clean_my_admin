@@ -48,7 +48,7 @@ void main(List<String> args) {
           multiRequestHandler.registerDefaultHandler(handleSyncRequest);
           multiRequestHandler.registerHandler('getHistory', handleHistoryRequest);
           multiRequestHandler.registerHandler('getAuthorChanges', handleAuthorChangesRequest);
-
+          multiRequestHandler.registerHandler('getAuthorChangesCount', handleAuthorChangesCountRequest);
 
           backend.addView('resources', multiRequestHandler.handleHttpRequest);
 
@@ -59,27 +59,40 @@ void main(List<String> args) {
   });
 }
 
-handleAuthorChangesRequest(ServerRequest sr) {
-  print("HANDLING AUTHOR CHANGE");
+getAuthorChangeSelector(Map args, {bool getCount}) {
+  var author = args['author'];
+  var fromTimestamp = args['fromTimestamp'];
+  var toTimestamp = args['toTimestamp'];
+  var skip = args["skip"];
+  var limit = args["limit"];
+  var selector = new SelectorBuilder().gte("timestamp",  DateTime.parse(fromTimestamp))
+       .and(new SelectorBuilder().lte("timestamp",  DateTime.parse(toTimestamp)))
+       .and(new SelectorBuilder().eq("author", author));
+  if (!getCount) {
+    selector = selector.sortBy("timestamp", descending: true)
+                .skip(skip).limit(limit);
+  }
+  return selector;
+}
+
+handleAuthorChangesCountRequest(ServerRequest sr) {
   var db = sr.args['db'];
   var collName = sr.args['collection'];
-  var author = sr.args['author'];
-  var fromTimestamp = sr.args['fromTimestamp'];
-  var toTimestamp = sr.args['toTimestamp'];
-  var skip = sr.args["skip"];
-  var limit = sr.args["limit"];
   return getMongo(db).then((mongoDb) {
-     var collection =  mongoDb.rawDb.collection('__clean_${collName}_history');
-     var collCursor = collection.find(new SelectorBuilder().gte("timestamp",  DateTime.parse(fromTimestamp))
-         .and(new SelectorBuilder().lte("timestamp",  DateTime.parse(toTimestamp)))
-         .and(new SelectorBuilder().eq("author", author))
-         .sortBy("timestamp", descending: true)
-         .skip(skip)
-         .limit(limit));
+    DbCollection collection = mongoDb.rawDb.collection('__clean_${collName}_history');
+    return collection.count(getAuthorChangeSelector(sr.args, getCount: true));
+  });
+}
+
+handleAuthorChangesRequest(ServerRequest sr) {
+  var db = sr.args['db'];
+  var collName = sr.args['collection'];
+  return getMongo(db).then((mongoDb) {
+     DbCollection collection =  mongoDb.rawDb.collection('__clean_${collName}_history');
+     var collCursor = collection.find(getAuthorChangeSelector(sr.args, getCount: false));
      var res = collCursor.toList();
      return res.then((res1) {
        // Because it cannot be JSONed
-
        var time = new DateTime.now();
        List changedDocs = res1.where((doc) => !noChangeIn(doc)).toList();
        changedDocs.forEach((i) => i['_id'] = i['_id'].toString());

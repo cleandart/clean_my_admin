@@ -287,8 +287,6 @@ class AuthorChangesView extends tiles.Component {
       'author': changesAuthorRef.value,
       'fromTimestamp' : changesTimeFromRef.value.toIso8601String(),
       'toTimestamp' : changesTimeToRef.value.toIso8601String(),
-      'limit': changesLimitRef.value is String ? num.parse(changesLimitRef.value) : changesLimitRef.value,
-      'skip': changesSkipRef.value is String ? num.parse(changesSkipRef.value) : changesSkipRef.value,
     })).then((result) {
       changesAuthorCountRef.value = result;
       loadingRef.value = false;
@@ -343,11 +341,11 @@ class AuthorChangesView extends tiles.Component {
           b({}, "Limit: "),
           mI(value: changesLimitRef),
         ]),
-//        div({},[
-//          b({}, "Total document count: "),
-//          span({}, "${changesAuthorCountRef.value}"),
-//          mButton(onClick: loadCount, content: " RELOAD "),
-//        ]),
+        div({},[
+          b({}, "Total document count: "),
+          span({}, "${changesAuthorCountRef.value}"),
+          mButton(onClick: loadCount, content: " RELOAD "),
+        ]),
         loadingRef.value ? span({},"Loading.. please wait") : cAuthorChangeOverview(changesAuthorResultRef, changesHideRef, ss1, ss2),
       ]);
 
