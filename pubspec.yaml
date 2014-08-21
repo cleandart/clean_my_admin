@@ -2,14 +2,14 @@ name: clean_my_admin
 description: A sample web application
 dependencies:
   browser: any
-  clean_ajax: any
+  clean_ajax: '>=0.4.21'
   clean_backend: any
   clean_data: '>=0.4.11'
   clean_router: any
   clean_sync: any
+  collection: any
   logging: any
+  mongo_dart: any
+  quiver: any
   react: any
   tiles: any
-  mongo_dart: any
-  collection: any
-  quiver: any
