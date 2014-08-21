@@ -239,7 +239,7 @@ class DocumentView extends tiles.Component {
 
 var historyDbRef = new DataReference(mongoDbDefault);
 var historySubsName = new DataReference('user');
-var historyIdPicker = new DataReference('hxq0328p5gl0-1');
+var historyIdPicker = new DataReference('hz3xnd21q7b0-1');
 var historyResult = new DataReference([]);
 var historyHide = new DataReference([]);
 var historyTimestamp = new DataReference(new DateTime.now());

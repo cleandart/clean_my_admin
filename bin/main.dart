@@ -64,7 +64,7 @@ handleHistoryRequest(ServerRequest sr) {
   print('time: $timestamp');
   return getMongo(db).then((mongoDb){
      var collection =  mongoDb.rawDb.collection('__clean_${collName}_history');
-     var collCursor = collection.find(new SelectorBuilder().lte("timestamp", DateTime.parse(timestamp)).and(
+     var collCursor = collection.find(new SelectorBuilder().gte("timestamp", DateTime.parse(timestamp)).and(
        new SelectorBuilder().eq("before._id", id)
        .or(new SelectorBuilder().eq("after._id", id)))
        .sortBy('timestamp', descending: true)
