@@ -6,7 +6,7 @@ dependencies:
   clean_backend: any
   clean_data: '>=0.4.11'
   clean_router: any
-  clean_sync: any
+  clean_sync: '>=0.4.11 < 0.4.12'
   collection: any
   logging: any
   mongo_dart: any
