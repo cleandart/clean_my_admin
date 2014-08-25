@@ -195,7 +195,7 @@ class DocumentView extends tiles.Component {
   var expanded = new DataReference(null);
 
   showHistoryFnc(id) {
-    showMode.value = true;
+    showMode.value = HISTORY;
     historyDbRef.value = dbRef.value;
     historySubsName.value = subsNameRef.value;
     historyIdPicker.value = id;
