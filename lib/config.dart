@@ -13,6 +13,9 @@ final Map mongoDbConfig = {
   'stage'  : 'mongodb://0.0.0.0:27017/stage',
   'devel'  : 'mongodb://0.0.0.0:27017/devel',
   'prod'  : 'mongodb://0.0.0.0:27017/prod',
+  'testing1'  : 'mongodb://0.0.0.0:27011/testing1',
+  'testing2'  : 'mongodb://0.0.0.0:27012/testing2',
+  'testing3'  : 'mongodb://0.0.0.0:27013/testing3',
 
   'remote-devel'  : 'mongodb://stage.fandim.sk/devel',
   'ssh-stage'  : 'mongodb://0.0.0.0:27018/stage',
