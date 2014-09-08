@@ -6,10 +6,12 @@ class DbPicker extends tiles.Component {
   static register() {
     var _registeredComponent = tiles.registerComponent(({props, children}) => new DbPicker(props));
 //    var _registeredComponent = tiles.registerComponent(() => new DbPicker());
-    return (dbRef) => _registeredComponent(props: {'dbRef': dbRef});
+    return (dbRef, availableDbNames) =>
+        _registeredComponent(props: {'dbRef': dbRef, 'availableDbNames': availableDbNames});
   }
   DbPicker(props) : super(props);
   DataReference get dbRef => props['dbRef'];
+  Iterable get availableDbNames => props['availableDbNames'];
 
   StreamSubscription ss;
   didMount() {
@@ -24,7 +26,7 @@ class DbPicker extends tiles.Component {
     return div({}, [
       b({},"Database: "),
       span({},
-        mongoDbConfig.keys.map((dbKey) =>
+        availableDbNames.map((dbKey) =>
            span({},[
              mButton(className: (dbKey == dbRef.value)?'green':'',
                      onClick: () => dbRef.value = dbKey,

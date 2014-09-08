@@ -1,6 +1,7 @@
 name: clean_my_admin
 description: A sample web application
 dependencies:
+  args: any
   browser: any
   clean_ajax: '>=0.4.21'
   clean_backend: any
