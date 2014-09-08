@@ -1,60 +1,86 @@
 import 'dart:async';
+import 'package:args/args.dart';
 import 'package:clean_sync/server.dart';
 import 'package:clean_ajax/server.dart';
 import 'package:clean_backend/clean_backend.dart';
 import 'package:clean_router/common.dart';
 import 'package:clean_my_admin/config.dart';
 import 'package:mongo_dart/mongo_dart.dart';
-import 'package:collection/equality.dart';
 
-Future<MongoDatabase> getMongo(key) {
-  if (mongoDb.containsKey(key)) {
-     return new Future.value(mongoDb[key]);
-  } else {
-    mongoDb[key] = new MongoDatabase(mongoDbConfig[key]);
-    return Future.wait(mongoDb[key].init).then((_) => mongoDb[key]);
+class DbProvider {
+  final Map _mongoDbConfig;
+  Map _dbs = {};
+
+  DbProvider(this._mongoDbConfig);
+
+  Future<MongoDatabase> getMongo(dbName) {
+    if (!canView(dbName)) {
+      throw new Exception('Client is unauthorized to view database $dbName.');
+    }
+
+    if (_dbs.containsKey(dbName)) {
+       return new Future.value(_dbs[dbName]);
+    } else {
+      _dbs[dbName] = new MongoDatabase(_mongoDbConfig[dbName]);
+      return Future.wait(_dbs[dbName].init).then((_) => _dbs[dbName]);
+    }
+  }
+
+  bool canView(dbName) => availableDbNames.contains(dbName);
+
+  List get availableDbNames => _mongoDbConfig.keys.toList();
+
+  waitForMongo(dbName, args) {
+    return getMongo(dbName).then((mongoDb) =>
+        mongoDb.collection(args['collection']).find(args['find'])
+    );
   }
 }
 
-noChangeIn(doc) => same(new Map.from(doc['before'])..remove("__clean_version")..remove("__clean_collection"), new Map.from(doc['after'])..remove("__clean_version")..remove("__clean_collection"));
+noChangeIn(doc) => same(
+    new Map.from(doc['before'])..remove("__clean_version")..remove("__clean_collection"),
+    new Map.from(doc['after'])..remove("__clean_version")..remove("__clean_collection"));
 
 same(x,y) => x.toString() == y.toString();
 
-waitForMongo(key, args) {
-  return getMongo(key).then((mongoDb) =>
-      mongoDb.collection(args['collection'])
-                 .find(args['find'])
-  );
-}
-
-
-var mongoDb = {};
 
 void main(List<String> args) {
+  var parser = new ArgParser();
+  parser.addFlag('all', abbr: 'a', defaultsTo: true); // expose all databases
+  bool all = parser.parse(args)['all'];
+  Map _mongoDbConfig = mongoDbConfig(all);
+  DbProvider dbp = new DbProvider(_mongoDbConfig);
+
   runZoned(() {
-    mongoDbConfig.keys.forEach((mongoKey){
-      publish('${mongoKey}-filtered', (args) => waitForMongo(mongoKey, args));
+    dbp.availableDbNames.forEach((mongoKey){
+      publish('${mongoKey}-filtered', (args) => dbp.waitForMongo(mongoKey, args));
     });
     Backend.bind('0.0.0.0', 8091, "").then((Backend backend) {
 
-          // ROUTES
-          backend.router.addRoute('resources', new Route('/resources/'));
-          backend.router.addRoute('dart', new Route("/dart/*"));
-          backend.router.addRoute('js', new Route("/js/*"));
-          backend.addDefaultHttpHeader('Access-Control-Allow-Origin','*');
+      // ROUTES
+      backend.router.addRoute('resources', new Route('/resources/'));
+      backend.router.addRoute('dart', new Route("/dart/*"));
+      backend.router.addRoute('js', new Route("/js/*"));
+      backend.addDefaultHttpHeader('Access-Control-Allow-Origin','*');
 
-          /// AJAX Requests
-          MultiRequestHandler multiRequestHandler = new MultiRequestHandler();
-          multiRequestHandler.registerDefaultHandler(handleSyncRequest);
-          multiRequestHandler.registerHandler('getHistory', handleHistoryRequest);
-          multiRequestHandler.registerHandler('getAuthorChanges', handleAuthorChangesRequest);
-          multiRequestHandler.registerHandler('getAuthorChangesCount', handleAuthorChangesCountRequest);
+      /// AJAX Requests
+      MultiRequestHandler multiRequestHandler = new MultiRequestHandler();
+      multiRequestHandler.registerDefaultHandler(handleSyncRequest);
+      multiRequestHandler.registerHandler('getHistory',
+          (sr) => handleHistoryRequest(sr, dbp));
+      multiRequestHandler.registerHandler('getAuthorChanges',
+          (sr) => handleAuthorChangesRequest(sr, dbp));
+      multiRequestHandler.registerHandler('getAuthorChangesCount',
+          (sr) => handleAuthorChangesCountRequest(sr, dbp));
+      multiRequestHandler.registerHandler('getAvailableDbNames',
+          (ServerRequest sr) => new Future.value(dbp.availableDbNames));
 
-          backend.addView('resources', multiRequestHandler.handleHttpRequest);
 
-          backend.addStaticView('dart', 'web/');
-          backend.addStaticView('js', 'build/web/');
-          print('Finished');
+      backend.addView('resources', multiRequestHandler.handleHttpRequest);
+
+      backend.addStaticView('dart', 'web/');
+      backend.addStaticView('js', 'build/web/');
+      print('Finished');
     });
   });
 }
@@ -75,19 +101,19 @@ getAuthorChangeSelector(Map args, {bool getCount}) {
   return selector;
 }
 
-handleAuthorChangesCountRequest(ServerRequest sr) {
+handleAuthorChangesCountRequest(ServerRequest sr, DbProvider dbp) {
   var db = sr.args['db'];
   var collName = sr.args['collection'];
-  return getMongo(db).then((mongoDb) {
+  return dbp.getMongo(db).then((mongoDb) {
     DbCollection collection = mongoDb.rawDb.collection('__clean_${collName}_history');
     return collection.count(getAuthorChangeSelector(sr.args, getCount: true));
   });
 }
 
-handleAuthorChangesRequest(ServerRequest sr) {
+handleAuthorChangesRequest(ServerRequest sr, DbProvider dbp) {
   var db = sr.args['db'];
   var collName = sr.args['collection'];
-  return getMongo(db).then((mongoDb) {
+  return dbp.getMongo(db).then((mongoDb) {
      DbCollection collection =  mongoDb.rawDb.collection('__clean_${collName}_history');
      var collCursor = collection.find(getAuthorChangeSelector(sr.args, getCount: false));
      var res = collCursor.toList();
@@ -104,13 +130,13 @@ handleAuthorChangesRequest(ServerRequest sr) {
   });
 }
 
-handleHistoryRequest(ServerRequest sr) {
+handleHistoryRequest(ServerRequest sr, DbProvider dbp) {
   var db = sr.args['db'];
   var collName = sr.args['collection'];
   var id = sr.args['_id'];
   var fromTimestamp = sr.args['fromTimestamp'];
   var toTimestamp = sr.args['toTimestamp'];
-  return getMongo(db).then((mongoDb){
+  return dbp.getMongo(db).then((mongoDb){
      var collection =  mongoDb.rawDb.collection('__clean_${collName}_history');
      var collCursor = collection.find(new SelectorBuilder().gte("timestamp", DateTime.parse(fromTimestamp))
        .and(new SelectorBuilder().lte("timestamp", DateTime.parse(toTimestamp)))
@@ -126,5 +152,4 @@ handleHistoryRequest(ServerRequest sr) {
       return res1;
     });
   });
-
 }

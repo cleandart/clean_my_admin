@@ -26,18 +26,24 @@ main() {
       createHttpConnection("/resources/", new Duration(milliseconds: 2000));
   print('will create subscriber');
   subscriber = new Subscriber(connection);
-  subscriber.init().then((_) {
-    print('create subscription');
+  subscriber.init()
+      .then((_) => connection.send(() => new ClientRequest('getAvailableDbNames', null)))
+      .then((dbNames) {
+        print('create subscription');
 
+        print('all done render page');
 
-    print('all done render page');
-    var page = Page.register();
-    tiles.mountComponent(page(), querySelector('#page'));
-    print("Initial sync");
+        var views = {DOCUMENT: cDocumentView(() => cDbPicker(dbRef, dbNames)),
+                     HISTORY: cHistoryView(() => cDbPicker(historyDbRef, dbNames)),
+                     AUTHOR_CHANGES: cAuthorChangesView(() => cDbPicker(changesDbRef, dbNames)),};
 
-  }).catchError((e) {
-    print(e);
-  });
+        var page = Page.register();
+        tiles.mountComponent(page(views), querySelector('#page'));
+        print("Initial sync");
+
+      }).catchError((e) {
+        print(e);
+      });
 }
 
 DataReference dbRef = new DataReference(mongoDbDefault);
@@ -159,10 +165,12 @@ class LimitDocuments extends tiles.Component {
 var cDocumentView = DocumentView.register();
 class DocumentView extends tiles.Component {
   static register() {
-    var _registeredComponent = tiles.registerComponent(({props, children}) => new DocumentView());
-    return () => _registeredComponent();
+    var _registeredComponent = tiles.registerComponent(({props, children}) => new DocumentView(props));
+    return (cDbPicker) => _registeredComponent(props: {'cDbPicker': cDbPicker});
   }
-  DocumentView(): super({});
+  DocumentView(props): super(props);
+
+  get cDbPicker => props['cDbPicker'];
 
   Subscription get subsctiption => subs.value;
 
@@ -207,7 +215,7 @@ class DocumentView extends tiles.Component {
 
   render() =>
     div({},[
-      cDbPicker(dbRef),
+      cDbPicker(),
       cSubsPicker(subsNameRef),
       cAddDocument(),
       cFilteringPicker(),
@@ -251,11 +259,13 @@ var changesAuthorCountRef = new DataReference(0);
 var cAuthorChangesView = AuthorChangesView.register();
 class AuthorChangesView extends tiles.Component {
   static register() {
-    var _registeredComponent = tiles.registerComponent(({props, children}) => new AuthorChangesView());
-    return () => _registeredComponent();
+    var _registeredComponent = tiles.registerComponent(({props, children}) => new AuthorChangesView(props));
+    return (cDbPicker) => _registeredComponent(props: {'cDbPicker': cDbPicker});
   }
 
-  AuthorChangesView(): super({});
+  AuthorChangesView(props): super(props);
+
+  get cDbPicker => props['cDbPicker'];
 
   List<StreamSubscription> ss;
   DataReference loadingRef = new DataReference(false);
@@ -322,7 +332,7 @@ class AuthorChangesView extends tiles.Component {
 
   render() =>
       div({},[
-        cDbPicker(changesDbRef),
+        cDbPicker(),
         cSubsPicker(changesSubsNameRef),
         cFieldHider(changesHideRef, changesSubsNameRef),
         div({}, [
@@ -364,10 +374,12 @@ var historyViewDocId = new DataReference(-1);
 var cHistoryView = HistoryView.register();
 class HistoryView extends tiles.Component {
   static register() {
-    var _registeredComponent = tiles.registerComponent(({props, children}) => new HistoryView());
-    return () => _registeredComponent();
+    var _registeredComponent = tiles.registerComponent(({props, children}) => new HistoryView(props));
+    return (cDbPicker) => _registeredComponent(props: {'cDbPicker': cDbPicker});
   }
-  HistoryView(): super({});
+  HistoryView(props): super(props);
+
+  get cDbPicker => props['cDbPicker'];
 
   DataReference index = new DataReference(0);
   DataReference loading = new DataReference(false);
@@ -431,7 +443,7 @@ class HistoryView extends tiles.Component {
 
   render() =>
     div({},[
-      cDbPicker(historyDbRef),
+      cDbPicker(),
       cSubsPicker(historySubsName),
       cTimestampSearch(historyFromTimestamp, historyToTimestamp),
       div({},[
@@ -474,10 +486,12 @@ DataReference showMode = new DataReference(DOCUMENT);
 
 class Page extends tiles.Component {
   static register() {
-    var _registeredComponent = tiles.registerComponent(({props, children}) => new Page());
-    return () => _registeredComponent();
+    var _registeredComponent = tiles.registerComponent(({props, children}) => new Page(props));
+    return (Map views) => _registeredComponent(props: {'views': views});
   }
-  Page(): super({});
+  Page(props): super(props);
+
+  Map get views => props['views'];
 
   var ss;
   didMount(){
@@ -489,11 +503,9 @@ class Page extends tiles.Component {
   }
 
   _renderProperView() {
-    switch(showMode.value) {
-      case DOCUMENT: return cDocumentView();
-      case HISTORY: return cHistoryView();
-      case AUTHOR_CHANGES: return cAuthorChangesView();
-    }
+    var mode = showMode.value;
+    if (views.keys.contains(mode)) return views[mode];
+    throw new Exception('Unknowd mode $mode.');
   }
 
   _renderButton(mode, text) =>
