@@ -47,7 +47,10 @@ same(x,y) => x.toString() == y.toString();
 void main(List<String> args) {
   var parser = new ArgParser();
   parser.addFlag('all', abbr: 'a', defaultsTo: true); // expose all databases
-  bool all = parser.parse(args)['all'];
+  parser.addOption('port', abbr: 'p', defaultsTo: '8091'); // expose all databases
+  var pArgs = parser.parse(args);
+  int port = int.parse(pArgs['port']);
+  bool all = pArgs['all'];
   Map _mongoDbConfig = mongoDbConfig(all);
   DbProvider dbp = new DbProvider(_mongoDbConfig);
 
@@ -55,7 +58,7 @@ void main(List<String> args) {
     dbp.availableDbNames.forEach((mongoKey){
       publish('${mongoKey}-filtered', (args) => dbp.waitForMongo(mongoKey, args));
     });
-    Backend.bind('0.0.0.0', 8091, "").then((Backend backend) {
+    Backend.bind('0.0.0.0', port, "").then((Backend backend) {
 
       // ROUTES
       backend.router.addRoute('resources', new Route('/resources/'));

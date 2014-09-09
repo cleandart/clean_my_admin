@@ -2,7 +2,8 @@ library clean_my_admin.config;
 
 final List allCollection = const ['player', 'club', 'user', 'match',
   'round', 'user_rank', 'bucket_user', 'transaction',
-  'player_archive', 'psc_buckets', 'bucket_size', 'bucket_competition_info'];
+  'player_archive', 'psc_buckets', 'bucket_size', 'bucket_competition_info',
+  'bucket_provision', 'payment'];
 
 const TESTING1_PORT = 27011;
 const TESTING2_PORT = 27012;
